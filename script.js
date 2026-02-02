@@ -336,34 +336,52 @@ function cariProduk(keyword) {
 
 }
 
-function daftarMitra(event) {
-    event.preventDefault(); // Mencegah halaman refresh
+async function daftarMitra(event) {
+    event.preventDefault();
 
-    // Mengambil data dari form
+    // Mengambil data dari elemen input HTML
     const nama = document.getElementById('m-nama').value;
     const hp = document.getElementById('m-hp').value;
     const bank = document.getElementById('m-bank').value;
     const tiktok = document.getElementById('m-tiktok').value;
     const code = document.getElementById('m-code').value;
+    // Karena di form tidak ada input alamat, kita isi default dulu atau ambil dari input jika ada
+    const alamat = "-"; 
 
-    // Menyusun teks pesan WhatsApp
-    const pesan = `*PENDAFTARAN MITRA AFFILIATE - TOKONEMBAHMO*\n\n` +
-                  `Halo Admin, saya ingin mendaftar sebagai mitra:\n\n` +
-                  `• *Nama Lengkap:* ${nama}\n` +
-                  `• *No. WhatsApp:* ${hp}\n` +
-                  `• *Data Bank/Rek:* ${bank}\n` +
-                  `• *Username TikTok:* ${tiktok}\n` +
-                  `• *Request Kode:* ${code}\n\n` +
-                  `Mohon segera diproses, terima kasih!`;
+    const btn = event.target.querySelector('button');
+    btn.innerText = "Sedang Mendaftar...";
+    btn.disabled = true;
 
-    // Membuka WhatsApp (Gunakan nomor admin yang sudah didefinisikan di awal script)
-    const urlWA = `https://wa.me/${noAdmin}?text=${encodeURIComponent(pesan)}`;
-    window.open(urlWA, '_blank');
+    try {
+        // SIMPAN KE TABEL affiliates
+        const { error } = await db
+            .from('affiliates')
+            .insert([
+                { 
+                    full_name: nama, 
+                    phone_number: hp, 
+                    address: alamat,
+                    bank_account: bank, 
+                    tiktok_account: tiktok, 
+                    referral_code: code,
+                    approved: false // Default sesuai gambar Anda
+                }
+            ]);
 
-    // Memberikan notifikasi sukses di halaman
-    const msgEl = document.getElementById('mitra-msg');
-    if (msgEl) {
-        msgEl.innerText = "Pendaftaran telah dikirim ke WhatsApp Admin!";
-        msgEl.style.color = "#42b549";
+        if (error) throw error;
+
+        // Buka WhatsApp untuk notifikasi ke Admin
+        const pesan = `*PENDAFTARAN MITRA BARU*\n\nNama: ${nama}\nWA: ${hp}\nTikTok: ${tiktok}\nRequest Kode: ${code}\n\nData sudah tersimpan di database.`;
+        window.open(`https://wa.me/${noAdmin}?text=${encodeURIComponent(pesan)}`, '_blank');
+
+        alert("Pendaftaran Berhasil Tersimpan!");
+        document.getElementById('form-mitra').reset();
+
+    } catch (error) {
+        alert("Gagal daftar: " + error.message);
+    } finally {
+        btn.innerText = "Kirim Pendaftaran via WA";
+        btn.disabled = false;
     }
 }
+
