@@ -1,7 +1,7 @@
 // ================= 1. KONFIGURASI SUPABASE =================
 const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co';
 const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
-const noAdmin = '6285700800278'; // Nomor WA Admin
+const noAdmin = '6285700800278'; // Ganti dengan nomor WA Admin
 
 const db = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -45,7 +45,7 @@ window.switchTab = function(tabName) {
         if (cartView) cartView.style.display = 'block';
         const btn = document.getElementById('nav-cart');
         if (btn) btn.classList.add('active');
-        renderCart(); // Render ulang agar data terbaru muncul
+        renderCart(); // Render ulang agar data terbaru
     } 
     else if (tabName === 'mitra') {
         if (mitraView) mitraView.style.display = 'block';
@@ -69,8 +69,8 @@ function renderProducts(list) {
     if (!container) return;
     
     container.innerHTML = list.map(p => {
-        // Safe check harga
-        const safePrice = p.price ? p.price.toLocaleString() : '0';
+        // PENGAMAN HARGA 1: Pastikan harga ada
+        const safePrice = (p.price !== undefined && p.price !== null) ? Number(p.price).toLocaleString() : '0';
         
         const tiktokBtn = p.default_tiktok_link 
             ? `<a href="${p.default_tiktok_link}" target="_blank" class="btn-tiktok"><i class="ri-tiktok-fill"></i></a>` 
@@ -108,13 +108,14 @@ window.searchProduct = function() {
 window.addToCart = function(id) {
     const product = products.find(p => p.id === id);
     
-    // Safety Check: Jika produk tidak ditemukan, batalkan agar tidak error
-    if (!product) return console.error("Produk tidak ditemukan ID:", id);
+    // Safety Check: Batalkan jika produk corrupt
+    if (!product) return console.error("Produk error ID:", id);
 
     const exist = cart.find(c => c.id === id);
     if (exist) {
         exist.qty++;
     } else {
+        // Kita copy object produk agar aman
         cart.push({...product, qty: 1});
     }
     
@@ -151,8 +152,11 @@ function renderCart() {
     let total = 0;
 
     container.innerHTML = cart.map((item, idx) => {
-        // PENGAMAN UTAMA: Jika harga undefined, anggap 0
-        const itemPrice = item.price || 0;
+        // PENGAMAN UTAMA 2: Cek harga sebelum format
+        let itemPrice = 0;
+        if (item.price !== undefined && item.price !== null) {
+            itemPrice = Number(item.price);
+        }
         
         total += itemPrice * item.qty;
         
@@ -171,6 +175,7 @@ function renderCart() {
         </div>`;
     }).join('');
     
+    // PENGAMAN UTAMA 3: Total juga diamankan
     document.getElementById('cart-total').innerText = "Rp " + total.toLocaleString();
 }
 
@@ -190,7 +195,7 @@ window.checkoutWhatsApp = async function() {
     const location = document.getElementById('c-location').value;
     const addr = document.getElementById('c-addr').value;
 
-    if(!name || !phone || !location || !addr) return alert("Mohon lengkapi semua data!");
+    if(!name || !phone || !location || !addr) return alert("Mohon lengkapi Nama, WA, Kota, dan Alamat!");
 
     const btn = document.querySelector('#cart-view .btn-wa');
     const oldText = btn.innerHTML;
@@ -198,7 +203,7 @@ window.checkoutWhatsApp = async function() {
     btn.disabled = true;
 
     // Hitung Total (Safe Calculation)
-    const total = cart.reduce((a,b) => a + ((b.price || 0) * b.qty), 0);
+    const total = cart.reduce((a,b) => a + ((Number(b.price) || 0) * b.qty), 0);
     const ref = sessionStorage.getItem('referral_code') || '-';
     
     const fullAddr = `${addr}, ${location}`;
@@ -274,6 +279,7 @@ window.cekStatusMitra = async function() {
         document.getElementById('login-form').style.display = 'none';
         document.getElementById('mitra-dash').style.display = 'block';
         document.getElementById('dash-nama').innerText = data.full_name;
+        // Generate link otomatis
         document.getElementById('dash-link').value = window.location.origin + window.location.pathname + "?ref=" + data.referral_code;
     }
 };
