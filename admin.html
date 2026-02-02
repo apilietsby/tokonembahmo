@@ -1,264 +1,133 @@
-// ==========================================
-// ADMIN.JS - PANEL ADMIN LENGKAP & FINAL
-// ==========================================
-
-// 1. SETUP SUPABASE
-const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co/'; 
-const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
-const db = supabase.createClient(supabaseUrl, supabaseKey);
-
-// ==========================================
-// BAGIAN 1: FITUR LOGIN (SOLUSI ERROR ANDA)
-// ==========================================
-
-// PASSWORD ADMIN (Ganti sesuka hati)
-const ADMIN_PASS = "admin123"; 
-
-// Fungsi yang dipanggil tombol MASUK
-function checkLogin() {
-    const input = document.getElementById('admin-pass').value;
-    const overlay = document.getElementById('login-overlay');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Tokonembahmo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    // Cek Password
-    if (input === ADMIN_PASS) {
-        // Jika Benar: Hilangkan layar kunci
-        if(overlay) overlay.style.display = 'none';
-        loadProducts(); // Muat produk setelah login berhasil
-    } else {
-        // Jika Salah: Munculkan pesan
-        alert("Password Salah! Silakan coba lagi.");
-    }
-}
-
-// Fitur tekan tombol "Enter" di keyboard untuk login
-document.addEventListener("DOMContentLoaded", () => {
-    const passInput = document.getElementById("admin-pass");
-    if(passInput) {
-        passInput.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                checkLogin();
-            }
-        });
-    }
-});
-
-// ==========================================
-// BAGIAN 2: LOGIKA FORM PRODUK & GAMBAR
-// ==========================================
-
-// Variabel Global
-let fileToUpload = null;
-let tempVariants = []; 
-
-// Navigasi Tampilan Form
-function showAddForm() {
-    document.getElementById('view-product-list').style.display = 'none';
-    document.getElementById('view-product-form').style.display = 'block';
-    
-    // Reset Form Total
-    document.getElementById('product-form').reset();
-    document.getElementById('edit-id').value = '';
-    
-    // Reset Preview Image
-    const preview = document.getElementById('preview-img');
-    if(preview) {
-        preview.src = '';
-        preview.style.display = 'none';
-    }
-    
-    // Reset Variabel
-    fileToUpload = null;
-    tempVariants = [];
-    renderVariantList();
-}
-
-function cancelForm() {
-    document.getElementById('view-product-list').style.display = 'block';
-    document.getElementById('view-product-form').style.display = 'none';
-    fileToUpload = null;
-    tempVariants = [];
-}
-
-// Preview Gambar Utama saat dipilih
-function previewImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        if (file.size > 2 * 1024 * 1024) return alert("File terlalu besar! Max 2MB");
+    <style>
+        /* CSS Admin Sederhana & Bersih */
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .admin-container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
-        fileToUpload = file;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const preview = document.getElementById('preview-img');
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-}
+        /* Header */
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
+        h2 { margin: 0; color: #2c3e50; }
+        .btn-view-store { text-decoration: none; color: #007bff; font-weight: bold; }
 
-// Tambah Varian ke List Sementara
-async function addVariantItem() {
-    const vName = document.getElementById('v-name').value.trim();
-    const vPrice = document.getElementById('v-price').value;
-    const vFile = document.getElementById('v-image').files[0];
-    const btnAdd = document.querySelector('button[onclick="addVariantItem()"]');
+        /* Login Overlay */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; width: 300px; }
+        
+        /* Buttons */
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .btn-add { background: #27ae60; color: white; width: 100%; margin-bottom: 20px; }
+        .btn-save { background: #2980b9; color: white; }
+        .btn-cancel { background: #95a5a6; color: white; margin-right: 10px; }
+        
+        /* Form Inputs */
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        label { font-weight: 600; display: block; margin-bottom: 5px; font-size: 13px; color: #555; }
+        
+        /* List Item */
+        .admin-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f0f0f0; background: #fff; }
+        .admin-item:hover { background: #f9f9f9; }
+        .admin-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; margin-right: 15px; border: 1px solid #eee; }
+        .item-info { flex-grow: 1; }
 
-    if (!vName || !vPrice) return alert("Isi Nama & Harga Varian!");
+        /* Preview Image */
+        #preview-img { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: none; margin-bottom: 10px; border: 2px dashed #ccc; }
+    </style>
+</head>
+<body>
 
-    btnAdd.innerText = "Uploading..."; btnAdd.disabled = true;
-
-    let vImageUrl = "";
-    if (vFile) {
-        const fileName = `var_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        const { error } = await db.storage.from('product-images').upload(fileName, vFile);
-        if (!error) {
-            const { data } = db.storage.from('product-images').getPublicUrl(fileName);
-            vImageUrl = data.publicUrl;
-        }
-    }
-
-    tempVariants.push({ name: vName, price: parseInt(vPrice), image: vImageUrl });
-    
-    // Reset input varian
-    document.getElementById('v-name').value = '';
-    document.getElementById('v-price').value = '';
-    document.getElementById('v-image').value = '';
-    btnAdd.innerText = "+ Tambah ke List Varian"; btnAdd.disabled = false;
-    
-    renderVariantList();
-}
-
-function renderVariantList() {
-    const container = document.getElementById('variant-list-container');
-    if(!container) return;
-
-    container.innerHTML = tempVariants.map((v, i) => `
-        <div class="admin-item" style="margin-bottom:5px; background:#f9f9f9; padding:10px;">
-            <img src="${v.image || 'https://via.placeholder.com/50'}" style="width:40px; height:40px; object-fit:cover;">
-            <div class="item-info" style="margin-left:10px;">
-                <strong>${v.name}</strong> - Rp ${v.price.toLocaleString()}
-            </div>
-            <button type="button" onclick="removeVariant(${i})" style="color:red; border:none; background:none; cursor:pointer;">Hapus</button>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h3 style="margin-top:0;">🔒 Admin Login</h3>
+            <input type="password" id="admin-pass" placeholder="Password...">
+            <button class="btn btn-save" style="width:100%" onclick="checkLogin()">MASUK</button>
         </div>
-    `).join('');
-}
+    </div>
 
-function removeVariant(index) {
-    tempVariants.splice(index, 1);
-    renderVariantList();
-}
-
-// ==========================================
-// BAGIAN 3: DATABASE (LOAD, SAVE, DELETE)
-// ==========================================
-
-async function loadProducts() {
-    const container = document.getElementById('admin-product-list');
-    container.innerHTML = '<p style="text-align:center;">Memuat data...</p>';
-    
-    const search = document.getElementById('search-input') ? document.getElementById('search-input').value : '';
-    let query = db.from('products').select('*').order('created_at', { ascending: false });
-    
-    if(search) query = query.ilike('name', `%${search}%`);
-
-    const { data, error } = await query;
-    
-    if (error || !data) return container.innerHTML = "Gagal memuat data.";
-    if (data.length === 0) return container.innerHTML = "Tidak ada produk.";
-
-    container.innerHTML = data.map(p => `
-        <div class="admin-item">
-            <img src="${p.image_url || 'https://via.placeholder.com/60'}" onerror="this.src='https://via.placeholder.com/60'">
-            <div class="item-info">
-                <strong>${p.name}</strong> <br>
-                <small>${p.sku || '-'} | Rp ${p.price.toLocaleString()}</small>
-            </div>
-            <div>
-                <button onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn" style="background:#ff9800; color:white;">✏️</button>
-                <button onclick="deleteProduct(${p.id})" class="btn" style="background:#f44336; color:white;">🗑️</button>
-            </div>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h2>Panel Admin</h2>
+            <a href="index.html" class="btn-view-store" target="_blank">Buka Toko ↗</a>
         </div>
-    `).join('');
-}
 
-async function saveProduct(event) {
-    event.preventDefault();
-    const btn = document.getElementById('btn-save');
-    const originalText = btn.innerText;
-    
-    btn.innerText = "Menyimpan..."; btn.disabled = true;
-
-    try {
-        const id = document.getElementById('edit-id').value;
-        const pName = document.getElementById('p-name').value;
-        const pPrice = parseInt(document.getElementById('p-price').value);
-
-        if (!pName || isNaN(pPrice)) throw new Error("Nama dan Harga wajib diisi!");
-
-        let imageUrl = null;
-        if (fileToUpload) {
-            const fileName = `main_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-            const { error } = await db.storage.from('product-images').upload(fileName, fileToUpload);
-            if (error) throw new Error("Gagal upload gambar.");
+        <div id="view-product-list">
+            <input type="text" id="search-input" placeholder="🔍 Cari nama barang..." onkeyup="loadProducts()">
+            <button onclick="showAddForm()" class="btn btn-add">+ Tambah Produk Baru</button>
             
-            const { data } = db.storage.from('product-images').getPublicUrl(fileName);
-            imageUrl = data.publicUrl;
-        }
+            <div id="admin-product-list">
+                <p style="text-align:center; color:#888;">Memuat data...</p>
+            </div>
+        </div>
 
-        const payload = {
-            name: pName,
-            sku: document.getElementById('p-sku').value,
-            price: pPrice,
-            description: document.getElementById('p-desc').value,
-            default_tiktok_link: document.getElementById('p-tiktok').value,
-            is_active: document.getElementById('p-status').value === 'true',
-            variants: tempVariants
-        };
+        <div id="view-product-form" style="display: none;">
+            <h3 style="margin-top: 0; color: #2980b9;">Form Produk</h3>
+            
+            <form id="product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="edit-id">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Nama Produk</label>
+                        <input type="text" id="p-name" placeholder="Contoh: Kopi Bubuk" required>
+                    </div>
+                    <div>
+                        <label>Kode SKU (Unik)</label>
+                        <input type="text" id="p-sku" placeholder="Contoh: KOPI-01" required>
+                    </div>
+                </div>
 
-        if (imageUrl) payload.image_url = imageUrl;
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Harga (Rp)</label>
+                        <input type="number" id="p-price" placeholder="Contoh: 15000" required>
+                    </div>
+                    <div>
+                        <label>Status</label>
+                        <select id="p-status">
+                            <option value="true">Aktif (Tampil)</option>
+                            <option value="false">Arsip (Sembunyi)</option>
+                        </select>
+                    </div>
+                </div>
 
-        const { error } = id 
-            ? await db.from('products').update(payload).eq('id', id)
-            : await db.from('products').insert([payload]);
+                <label>Deskripsi Produk</label>
+                <textarea id="p-desc" rows="3" placeholder="Jelaskan produk Anda..."></textarea>
 
-        if (error) throw error;
+                <label>Link TikTok Shop (Opsional)</label>
+                <input type="text" id="p-tiktok" placeholder="https://...">
 
-        alert("Berhasil menyimpan!");
-        cancelForm();
-        loadProducts();
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef;">
+                    <h4 style="margin-top:0; margin-bottom:10px; color:#555;">Varian (Warna/Ukuran)</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                        <input type="text" id="v-name" placeholder="Nama Varian (Cth: Merah / XL)">
+                        <input type="number" id="v-price" placeholder="Harga Varian">
+                    </div>
+                    <input type="file" id="v-image" accept="image/*">
+                    
+                    <button type="button" onclick="addVariantItem()" class="btn" style="background:#6c757d; color:white; width:100%; margin-top:5px;">+ Tambah Varian</button>
 
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        btn.innerText = originalText; btn.disabled = false;
-    }
-}
+                    <div id="variant-list-container" style="margin-top:10px; max-height: 200px; overflow-y: auto;"></div>
+                </div>
 
-window.editProduct = (p) => {
-    showAddForm();
-    document.getElementById('edit-id').value = p.id;
-    document.getElementById('p-name').value = p.name || '';
-    document.getElementById('p-sku').value = p.sku || '';
-    document.getElementById('p-price').value = p.price || '';
-    document.getElementById('p-desc').value = p.description || '';
-    document.getElementById('p-tiktok').value = p.default_tiktok_link || '';
-    document.getElementById('p-status').value = String(p.is_active);
-    
-    tempVariants = p.variants || [];
-    renderVariantList();
-    
-    if(p.image_url) {
-        const preview = document.getElementById('preview-img');
-        if(preview) {
-            preview.src = p.image_url;
-            preview.style.display = 'block';
-        }
-    }
-};
+                <label>Foto Utama Produk</label>
+                <img id="preview-img" alt="Preview">
+                <input type="file" id="p-image" accept="image/*" onchange="previewImage(event)">
 
-window.deleteProduct = async (id) => {
-    if(confirm("Hapus produk ini?")) {
-        await db.from('products').delete().eq('id', id);
-        loadProducts();
-    }
-};
+                <div style="margin-top: 25px; text-align: right; border-top: 1px solid #eee; padding-top: 20px;">
+                    <button type="button" onclick="cancelForm()" class="btn btn-cancel">Batal</button>
+                    <button type="submit" id="btn-save" class="btn btn-save">Simpan Produk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
