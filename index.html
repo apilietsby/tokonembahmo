@@ -21,31 +21,38 @@
     <div class="container">
         
         <main id="view-store">
+            <div style="background: var(--accent); padding: 20px; border-radius: var(--radius); margin-bottom: 20px; color: var(--primary); font-weight: bold; text-align: center;">
+                🌿 Selamat Datang di Toko Resmi
+            </div>
+
             <input type="text" id="search" class="input-field" placeholder="Cari produk..." onkeyup="searchProduct()">
             
+            <h3 style="margin: 15px 0; color: #555; font-size: 16px;">Daftar Produk</h3>
+
             <div id="product-list" class="product-grid">
-                <p style="grid-column: span 2; text-align:center; padding: 20px;">Memuat produk...</p>
+                <p style="grid-column: span 2; text-align:center; padding: 20px; color: #888;">Memuat produk...</p>
             </div>
         </main>
 
         <main id="view-cart" style="display: none;">
-            <h2 style="margin-bottom: 20px; color: var(--primary);">Keranjang Belanja</h2>
+            <h2 style="margin-bottom: 20px; color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px;">Keranjang Belanja</h2>
+            
             <div id="cart-items"></div>
             
-            <div style="margin-top: 20px; background: white; padding: 15px; border-radius: 10px; box-shadow: var(--shadow);">
-                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:15px; font-size: 18px;">
-                    <span>Total</span>
-                    <span id="cart-total">Rp 0</span>
+            <div style="margin-top: 25px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow);">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:15px; font-size: 18px; color: var(--text-dark);">
+                    <span>Total Estimasi</span>
+                    <span id="cart-total" style="color: var(--primary);">Rp 0</span>
                 </div>
                 
-                <p style="font-size:12px; font-weight:bold; margin-bottom:5px;">Data Pengiriman:</p>
+                <p style="font-size:12px; font-weight:bold; margin-bottom:8px; color: #666;">Data Pengiriman:</p>
                 <input id="c-name" class="input-field" placeholder="Nama Penerima">
-                <input id="c-phone" class="input-field" type="number" placeholder="No WhatsApp">
-                <input id="c-loc" class="input-field" placeholder="Kecamatan & Kota (Contoh: Gubeng, Surabaya)">
-                <textarea id="c-addr" class="input-field" rows="2" placeholder="Alamat Lengkap (Jalan, RT/RW)"></textarea>
+                <input id="c-phone" class="input-field" type="number" placeholder="No WhatsApp (08...)">
+                <input id="c-loc" class="input-field" placeholder="Kecamatan & Kota (Wajib Diisi)">
+                <textarea id="c-addr" class="input-field" rows="2" placeholder="Alamat Lengkap (Jalan, RT/RW, Patokan)"></textarea>
 
                 <button onclick="checkoutWA()" class="btn-wa">
-                    <i class="ri-whatsapp-line"></i> Beli via WhatsApp
+                    <i class="ri-whatsapp-line"></i> Lanjut ke WhatsApp
                 </button>
             </div>
         </main>
@@ -53,29 +60,32 @@
         <main id="view-mitra" style="display: none;">
             <div style="display:flex; gap:10px; margin-bottom:20px;">
                 <button onclick="mitraMode('daftar')" id="btn-daftar" class="btn-primary" style="flex:1;">Daftar</button>
-                <button onclick="mitraMode('login')" id="btn-login" class="btn-primary" style="flex:1; background:#ccc; color:#333;">Login</button>
+                <button onclick="mitraMode('login')" id="btn-login" class="btn-primary" style="flex:1; background:#e9ecef; color:#333;">Login</button>
             </div>
 
             <div id="panel-daftar">
-                <div style="background:white; padding:20px; border-radius:10px; box-shadow:var(--shadow);">
-                    <h3 style="color:var(--primary); margin-bottom:10px;">Daftar Mitra</h3>
+                <div style="background:white; padding:25px; border-radius:var(--radius); box-shadow:var(--shadow);">
+                    <h3 style="color:var(--primary); margin-bottom:15px; text-align: center;">Form Pendaftaran</h3>
                     <form onsubmit="daftarMitra(event)">
                         <input id="m-nama" class="input-field" placeholder="Nama Lengkap" required>
-                        <input id="m-hp" class="input-field" type="number" placeholder="No WA" required>
-                        <input id="m-bank" class="input-field" placeholder="Bank & No Rek" required>
-                        <input id="m-tiktok" class="input-field" placeholder="Akun TikTok" required>
-                        <input id="m-code" class="input-field" placeholder="Kode Unik (Cth: ANDI01)" required>
-                        <button type="submit" class="btn-primary">Kirim Pendaftaran</button>
+                        <input id="m-hp" class="input-field" type="number" placeholder="No WhatsApp" required>
+                        <input id="m-bank" class="input-field" placeholder="Nama Bank & No Rek" required>
+                        <input id="m-tiktok" class="input-field" placeholder="Akun TikTok (@contoh)" required>
+                        <input id="m-code" class="input-field" placeholder="Buat Kode Unik (Cth: ANDI01)" required>
+                        <button type="submit" class="btn-primary" style="margin-top: 10px;">Kirim Pendaftaran</button>
                     </form>
                 </div>
             </div>
 
             <div id="panel-login" style="display:none;">
-                <div style="background:white; padding:20px; border-radius:10px; box-shadow:var(--shadow);">
-                    <h3>Cek Status</h3>
-                    <input id="cek-hp" class="input-field" type="number" placeholder="Masukkan No WA">
-                    <button onclick="cekMitra()" class="btn-primary">Masuk</button>
-                    <div id="mitra-result" style="margin-top:15px; font-weight:bold; text-align:center;"></div>
+                <div style="background:white; padding:25px; border-radius:var(--radius); box-shadow:var(--shadow);">
+                    <h3 style="margin-bottom: 15px; text-align: center;">Cek Status Mitra</h3>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px; text-align: center;">Masukkan nomor WA yang didaftarkan</p>
+                    
+                    <input id="cek-hp" class="input-field" type="number" placeholder="Nomor WhatsApp...">
+                    <button onclick="cekMitra()" class="btn-primary">Masuk Dashboard</button>
+                    
+                    <div id="mitra-result" style="margin-top:20px; font-weight:bold; text-align:center;"></div>
                 </div>
             </div>
         </main>
@@ -84,11 +94,18 @@
 
     <div id="modal-detail" class="modal" onclick="closeModal(event)">
         <div class="modal-content">
-            <div style="width: 50px; height: 5px; background: #ddd; margin: 0 auto 15px; border-radius: 5px;"></div>
+            <div style="width: 50px; height: 5px; background: #dee2e6; margin: 0 auto 20px; border-radius: 5px;"></div>
+            
             <img id="d-img" src="" class="detail-img">
-            <h2 id="d-name">Nama Produk</h2>
-            <p id="d-price" style="color:var(--primary); font-weight:bold; font-size:18px;">Rp 0</p>
-            <p id="d-desc" style="color:#666; font-size:13px; margin: 10px 0;">Deskripsi</p>
+            
+            <div style="margin-bottom: 15px;">
+                <h2 id="d-name" style="font-size: 20px; color: var(--text-dark);">Nama Produk</h2>
+                <p id="d-price" style="color:var(--primary); font-weight:bold; font-size:20px; margin-top: 5px;">Rp 0</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 15px;">
+                <p id="d-desc">Deskripsi produk...</p>
+            </div>
             
             <div class="qty-wrapper">
                 <button class="qty-btn" onclick="modalQty(-1)">-</button>
@@ -97,7 +114,7 @@
             </div>
 
             <button onclick="addToCartFromModal()" class="btn-primary">
-                + Masukkan Keranjang
+                <i class="ri-shopping-bag-3-fill"></i> Masukkan Keranjang
             </button>
         </div>
     </div>
