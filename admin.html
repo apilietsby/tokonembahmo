@@ -3,197 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Tokonembahmo</title>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <style>
-        /* 1. Reset & Layout Dasar */
-        :root {
-            --primary-color: #42b549; /* Hijau Tokopedia Style */
-            --primary-dark: #35963b;
-            --shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f4f6f8;
-            padding: 20px;
-            margin: 0;
-            color: #333;
-        }
-
-        .admin-container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: var(--shadow);
-        }
-
-        /* 2. Header & Tombol */
-        .admin-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee;
-        }
-        h2 { margin: 0; color: var(--primary-color); }
-        
-        .btn {
-            padding: 10px 15px; border: none; border-radius: 5px;
-            cursor: pointer; font-weight: bold; font-size: 14px;
-            transition: opacity 0.2s;
-        }
-        .btn:active { opacity: 0.8; }
-        .btn-add { background: var(--primary-color); color: white; }
-        .btn-cancel { background: #7f8c8d; color: white; margin-right: 10px; }
-        .btn-save { background: #27ae60; color: white; }
-        .btn-view-store { text-decoration: none; color: #2980b9; font-size: 14px; }
-
-        /* 3. Input Form */
-        input, textarea, select {
-            width: 100%; padding: 10px; margin-bottom: 15px;
-            border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
-        }
-        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 13px; }
-
-        /* 4. List Produk */
-        .admin-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px; border-bottom: 1px solid #eee;
-            background: #fff;
-        }
-        .admin-item img {
-            width: 60px !important;
-            height: 60px !important;
-            object-ratio: 1 / 1;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 15px;
-            border: 1px solid #ddd;
-        }
-        .item-info { flex-grow: 1; }
-
-        /* 5. Tabel Affiliate (Penambahan Baru) */
-        .admin-section { margin-top: 40px; }
-        .table-responsive {
-            overflow-x: auto; 
-            background: white; 
-            border: 1px solid #eee;
-            border-radius: 8px;
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f9f9f9; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        
-        .status-badge {
-            padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;
-        }
-        .status-active { background: #e8f5e9; color: #2e7d32; }
-        .status-pending { background: #fff3e0; color: #ef6c00; }
-
-        #preview-img {
-            width: 100px; height: 100px; object-fit: cover;
-            border: 2px dashed #ddd; display: none; margin-bottom: 10px;
-        }
-    </style>
 </head>
-<body>
+<body style="background:#ddd;">
 
-    <div class="admin-container">
-        <div class="admin-header">
-            <h2>Admin Panel</h2>
-            <a href="index.html" class="btn-view-store" target="_blank">Lihat Toko ↗</a>
+    <div class="admin-container" style="margin-top:30px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:20px;">
+            <h2>Admin Tokonembahmo</h2>
+            <a href="index.html" target="_blank" style="text-decoration:none; color:blue;">Buka Toko ↗</a>
         </div>
 
-        <div id="view-product-list">
-            <input type="text" id="search-input" placeholder="Cari nama barang..." onkeyup="loadProducts()" style="margin-bottom: 20px;">
-            <button onclick="showAddForm()" class="btn btn-add">+ Tambah Produk</button>
-            
-            <div id="admin-product-list" style="margin-top: 20px;">
-                <p>Memuat data produk...</p>
-            </div>
+        <h3>Kelola Produk</h3>
+        <button onclick="openForm()" class="btn-wa" style="width:auto; margin-bottom:15px;">+ Tambah Produk</button>
+        
+        <div id="product-list-admin" class="product-grid"></div>
 
-            <div class="admin-section">
-                <hr style="margin: 40px 0; border: 0; border-top: 2px solid #eee;">
-                <h3 style="color: var(--primary-color); margin-bottom: 15px;">Manajemen Mitra Affiliate</h3>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nama / TikTok</th>
-                                <th>WhatsApp</th>
-                                <th>Kode Ref</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="affiliate-list-admin">
-                            <tr><td colspan="5" style="text-align:center;">Memuat data mitra...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div id="form-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+            <div style="background:white; padding:20px; width:90%; max-width:400px; border-radius:8px;">
+                <h3>Form Produk</h3>
+                <input type="hidden" id="p-id">
+                <input id="p-name" class="input-field" placeholder="Nama Produk">
+                <input id="p-price" class="input-field" type="number" placeholder="Harga">
+                <input id="p-img" type="file" class="input-field">
+                <button onclick="saveProduct()" class="btn-wa">Simpan</button>
+                <button onclick="document.getElementById('form-overlay').style.display='none'" style="margin-top:10px; width:100%; padding:10px;">Batal</button>
             </div>
         </div>
 
-        <div id="view-product-form" style="display: none;">
-            <h3 style="margin-top: 0;">Form Produk</h3>
-            <form id="product-form" onsubmit="saveProduct(event)">
-                <input type="hidden" id="edit-id">
-                
-                <label>Nama Produk</label>
-                <input type="text" id="p-name" required>
+        <hr style="margin:40px 0;">
 
-                <label>Kode SKU</label>
-                <input type="text" id="p-sku" required>
-
-                <label>Harga Dasar (Rp)</label>
-                <input type="number" id="p-price" required>
-
-                <label>Deskripsi</label>
-                <textarea id="p-desc" rows="3"></textarea>
-
-                <label>Link TikTok (Opsional)</label>
-                <input type="text" id="p-tiktok" placeholder="https://...">
-
-                <label>Status Produk</label>
-                <select id="p-status" style="margin-bottom: 20px;">
-                    <option value="true">Aktif</option>
-                    <option value="false">Arsip</option>
-                </select>
-
-                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbdefb;">
-                    <h4 style="margin-top:0; color:#0d47a1;">Kelola Varian (Warna/Ukuran)</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <input type="text" id="v-name" placeholder="Nama (Contoh: Merah / XL)">
-                        <input type="number" id="v-price" placeholder="Harga Varian">
-                    </div>
-                    <label style="font-size:11px;">Foto Varian (Opsional)</label>
-                    <input type="file" id="v-image" accept="image/*">
-                    <button type="button" onclick="addVariantItem()" class="btn" style="background:#2196f3; color:white; width:100%; margin-top:5px;">+ Tambah ke List Varian</button>
-                    <div id="variant-list-container" style="margin-top:15px; max-height: 200px; overflow-y: auto;"></div>
-                </div>
-
-                <label>Foto Utama Produk</label>
-                <img id="preview-img" alt="Preview">
-                <input type="file" id="p-image" accept="image/*" onchange="previewImage(event)">
-                <div id="upload-placeholder" style="font-size:12px; color:#888; margin-bottom:10px;">*Foto utama wajib ada</div>
-
-                <div style="margin-top: 20px; text-align: right;">
-                    <button type="button" onclick="cancelForm()" class="btn btn-cancel">Batal</button>
-                    <button type="submit" id="btn-save" class="btn btn-save">Simpan Produk</button>
-                </div>
-            </form>
+        <h3>Daftar Mitra Affiliate</h3>
+        <div style="overflow-x:auto;">
+            <table class="admin-table">
+                <thead>
+                    <tr><th>Nama</th><th>WA</th><th>Kode</th><th>Status</th><th>Aksi</th></tr>
+                </thead>
+                <tbody id="mitra-list"></tbody>
+            </table>
         </div>
     </div>
 
     <script src="admin.js"></script>
-    <script>
-        // Memastikan daftar affiliate dimuat saat halaman dibuka
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof fetchAffiliates === "function") {
-                fetchAffiliates();
-            }
-        });
-    </script>
 </body>
 </html>
