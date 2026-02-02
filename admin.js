@@ -1,5 +1,5 @@
 // ==========================================
-// ADMIN.JS - PANEL ADMIN LENGKAP
+// ADMIN.JS - PANEL ADMIN LENGKAP & FINAL
 // ==========================================
 
 // 1. SETUP SUPABASE
@@ -8,61 +8,53 @@ const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
 const db = supabase.createClient(supabaseUrl, supabaseKey);
 
 // ==========================================
-// BAGIAN 1: LOGIN (SOLUSI ERROR ANDA)
+// BAGIAN 1: FITUR LOGIN
 // ==========================================
 
-// PASSWORD ADMIN (Ganti sesuka hati)
+// PASSWORD ADMIN
 const ADMIN_PASS = "admin123"; 
 
 function checkLogin() {
     const input = document.getElementById('admin-pass').value;
+    const overlay = document.getElementById('login-overlay');
     
-    // Cek Password
     if (input === ADMIN_PASS) {
-        // Jika Benar: Hilangkan layar kunci
-        document.getElementById('login-overlay').style.display = 'none';
-        loadProducts(); // Muat produk setelah login
+        if(overlay) overlay.style.display = 'none';
+        loadProducts(); 
     } else {
-        // Jika Salah: Munculkan pesan
         alert("Password Salah! Silakan coba lagi.");
     }
 }
 
-// Fitur tekan Enter untuk login
 document.addEventListener("DOMContentLoaded", () => {
     const passInput = document.getElementById("admin-pass");
     if(passInput) {
         passInput.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                checkLogin();
-            }
+            if (event.key === "Enter") checkLogin();
         });
     }
 });
 
 // ==========================================
-// BAGIAN 2: LOGIKA PRODUK & GAMBAR
+// BAGIAN 2: LOGIKA FORM & GAMBAR
 // ==========================================
 
-// Variabel Global
 let fileToUpload = null;
 let tempVariants = []; 
 
-// Navigasi Form
 function showAddForm() {
     document.getElementById('view-product-list').style.display = 'none';
     document.getElementById('view-product-form').style.display = 'block';
     
-    // Reset Form Total
     document.getElementById('product-form').reset();
     document.getElementById('edit-id').value = '';
     
-    // Reset Preview Image
     const preview = document.getElementById('preview-img');
-    preview.src = '';
-    preview.style.display = 'none';
+    if(preview) {
+        preview.src = '';
+        preview.style.display = 'none';
+    }
     
-    // Reset Variabel
     fileToUpload = null;
     tempVariants = [];
     renderVariantList();
@@ -75,7 +67,6 @@ function cancelForm() {
     tempVariants = [];
 }
 
-// Preview Gambar Utama
 function previewImage(event) {
     const file = event.target.files[0];
     if (file) {
@@ -92,7 +83,6 @@ function previewImage(event) {
     }
 }
 
-// Tambah Varian
 async function addVariantItem() {
     const vName = document.getElementById('v-name').value.trim();
     const vPrice = document.getElementById('v-price').value;
@@ -115,20 +105,22 @@ async function addVariantItem() {
 
     tempVariants.push({ name: vName, price: parseInt(vPrice), image: vImageUrl });
     
-    // Reset input varian
     document.getElementById('v-name').value = '';
     document.getElementById('v-price').value = '';
     document.getElementById('v-image').value = '';
-    btnAdd.innerText = "+ Tambah ke List Varian"; btnAdd.disabled = false;
+    btnAdd.innerText = "+ Tambah Varian"; btnAdd.disabled = false;
     
     renderVariantList();
 }
 
 function renderVariantList() {
     const container = document.getElementById('variant-list-container');
+    if(!container) return;
+
+    // PERBAIKAN: Menggunakan placehold.co agar tidak error
     container.innerHTML = tempVariants.map((v, i) => `
         <div class="admin-item" style="margin-bottom:5px; background:#f9f9f9; padding:10px;">
-            <img src="${v.image || 'https://via.placeholder.com/50'}" style="width:40px; height:40px; object-fit:cover;">
+            <img src="${v.image || 'https://placehold.co/50'}" style="width:40px; height:40px; object-fit:cover;">
             <div class="item-info" style="margin-left:10px;">
                 <strong>${v.name}</strong> - Rp ${v.price.toLocaleString()}
             </div>
@@ -143,14 +135,14 @@ function removeVariant(index) {
 }
 
 // ==========================================
-// BAGIAN 3: CRUD DATABASE (LOAD, SAVE, DELETE)
+// BAGIAN 3: DATABASE
 // ==========================================
 
 async function loadProducts() {
     const container = document.getElementById('admin-product-list');
     container.innerHTML = '<p style="text-align:center;">Memuat data...</p>';
     
-    const search = document.getElementById('search-input').value;
+    const search = document.getElementById('search-input') ? document.getElementById('search-input').value : '';
     let query = db.from('products').select('*').order('created_at', { ascending: false });
     
     if(search) query = query.ilike('name', `%${search}%`);
@@ -160,9 +152,10 @@ async function loadProducts() {
     if (error || !data) return container.innerHTML = "Gagal memuat data.";
     if (data.length === 0) return container.innerHTML = "Tidak ada produk.";
 
+    // PERBAIKAN: Menggunakan placehold.co agar tidak error
     container.innerHTML = data.map(p => `
         <div class="admin-item">
-            <img src="${p.image_url || 'https://via.placeholder.com/60'}" onerror="this.src='https://via.placeholder.com/60'">
+            <img src="${p.image_url || 'https://placehold.co/60'}" onerror="this.src='https://placehold.co/60'">
             <div class="item-info">
                 <strong>${p.name}</strong> <br>
                 <small>${p.sku || '-'} | Rp ${p.price.toLocaleString()}</small>
@@ -243,8 +236,10 @@ window.editProduct = (p) => {
     
     if(p.image_url) {
         const preview = document.getElementById('preview-img');
-        preview.src = p.image_url;
-        preview.style.display = 'block';
+        if(preview) {
+            preview.src = p.image_url;
+            preview.style.display = 'block';
+        }
     }
 };
 
