@@ -11,10 +11,22 @@
 </head>
 <body>
 
-    <div class="container">
-        <main id="store-view">
-            <div style="background:white; padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:10px;">
-                <input type="text" id="search-input" class="input-field" placeholder="Cari barang..." style="margin:0;" onkeyup="searchProduct()">
+    <nav class="top-navbar">
+        <div class="nav-brand">
+            <i class="ri-store-2-fill"></i> Tokonembahmo
+        </div>
+        <div class="nav-icons">
+            <div class="cart-icon-top" onclick="switchTab('cart')">
+                <i class="ri-shopping-cart-2-line"></i>
+                <span id="cart-badge-top" class="badge">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="padding-top: 70px;"> <main id="store-view">
+            <div style="background:white; padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <i class="ri-search-line" style="color:#888; align-self:center; margin-left:5px;"></i>
+                <input type="text" id="search-input" class="input-field" placeholder="Cari barang..." style="margin:0; border:none; background:transparent;" onkeyup="searchProduct()">
             </div>
             <div id="product-list" class="product-grid">
                 <p style="text-align:center; width:200%;">Memuat produk...</p>
@@ -25,10 +37,10 @@
             <h3>Keranjang Belanja</h3>
             <div id="cart-items" style="margin-top:15px;"></div>
             
-            <div style="background:white; padding:15px; border-radius:8px; margin-top:20px; box-shadow:var(--shadow);">
+            <div style="background:white; padding:15px; border-radius:8px; margin-top:20px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:15px;">
                     <span>Total:</span>
-                    <span id="cart-total" style="color:var(--primary);">Rp 0</span>
+                    <span id="cart-total" style="color:#42b549;">Rp 0</span>
                 </div>
                 
                 <p style="font-size:12px; font-weight:bold;">Data Pengiriman:</p>
@@ -52,8 +64,8 @@
             </div>
 
             <div id="panel-daftar">
-                <div style="background:white; padding:20px; border-radius:8px;">
-                    <h3 style="color:var(--primary);">Daftar Mitra</h3>
+                <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
+                    <h3 style="color:#42b549;">Daftar Mitra</h3>
                     <p style="font-size:12px; color:#666; margin-bottom:15px;">Dapatkan komisi dari setiap penjualan!</p>
                     <form onsubmit="daftarMitra(event)">
                         <input id="m-nama" class="input-field" placeholder="Nama Lengkap" required>
@@ -67,7 +79,7 @@
             </div>
 
             <div id="panel-cek" style="display:none;">
-                <div style="background:white; padding:20px; border-radius:8px;">
+                <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
                     <h3>Cek Status / Login</h3>
                     <div id="login-form">
                         <input id="cek-hp" class="input-field" type="number" placeholder="Masukkan No WA terdaftar">
