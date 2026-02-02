@@ -64,10 +64,9 @@
                 <input type="text" id="c-name" class="input-field" placeholder="Nama Penerima">
                 <input type="number" id="c-phone" class="input-field" placeholder="No WhatsApp Aktif">
                 
-                <div style="display:grid; gap:10px; margin-bottom:10px;">
-                    <select id="c-prov" class="input-field" style="margin:0;"><option value="">Pilih Provinsi</option></select>
-                    <select id="c-city" class="input-field" style="margin:0;" disabled><option>Pilih Kota/Kab</option></select>
-                    <select id="c-dist" class="input-field" style="margin:0;" disabled><option>Pilih Kecamatan</option></select>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-size:12px; font-weight:bold; color:#555;">Kecamatan & Kota/Kab:</label>
+                    <input type="text" id="cart-location" class="input-field" placeholder="Contoh: Gubeng, Surabaya" required>
                 </div>
                 
                 <textarea id="c-addr" class="input-field" rows="2" placeholder="Alamat Lengkap (Jalan, RT/RW, Patokan)"></textarea>
@@ -156,3 +155,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
