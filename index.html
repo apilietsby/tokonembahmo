@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOKONEMBAHMO - Toko Serba Ada</title>
+    <title>Tokonembahmo</title>
     
     <link rel="stylesheet" href="style.css">
     
@@ -35,15 +35,15 @@
         
         <main id="store-view">
             <div class="hero-banner" style="margin-bottom:15px; border-radius:8px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-                <img src="https://placehold.co/600x250/42b549/white?text=PROMO+SPESIAL+HARI+INI" style="width:100%; display:block;" alt="Banner Promo">
+                <img src="https://placehold.co/600x250/42b549/white?text=PROMO+HARI+INI" style="width:100%; display:block;" alt="Banner">
             </div>
 
             <div style="padding: 5px 0 15px 0; font-weight: bold; font-size: 15px; color: #333; display:flex; align-items:center; gap:5px;">
-                <i class="ri-fire-fill" style="color:orange;"></i> Rekomendasi Untukmu
+                <i class="ri-fire-fill" style="color:orange;"></i> Rekomendasi
             </div>
 
             <div id="product-list" class="product-grid">
-                <p style="text-align:center; grid-column:span 2; padding:30px; color:#999;">Sedang memuat produk...</p>
+                <p style="text-align:center; grid-column:span 2; padding:30px; color:#999;">Memuat produk...</p>
             </div>
         </main>
 
@@ -65,14 +65,14 @@
                 <input type="number" id="c-phone" class="input-field" placeholder="No WhatsApp Aktif">
                 
                 <div style="margin-bottom: 10px;">
-                    <label style="font-size:12px; font-weight:bold; color:#555;">Kecamatan & Kota/Kab:</label>
-                    <input type="text" id="cart-location" class="input-field" placeholder="Contoh: Gubeng, Surabaya" required>
+                    <label style="font-size:11px; font-weight:bold; color:#666;">Kecamatan & Kota/Kab:</label>
+                    <input type="text" id="c-location" class="input-field" placeholder="Contoh: Gubeng, Surabaya" style="margin-top:5px;">
                 </div>
                 
-                <textarea id="c-addr" class="input-field" rows="2" placeholder="Alamat Lengkap (Jalan, RT/RW, Patokan)"></textarea>
+                <textarea id="c-addr" class="input-field" rows="2" placeholder="Detail Alamat (Nama Jalan, No. Rumah, Patokan)"></textarea>
 
                 <div class="checkout-note" style="background:#fff3cd; color:#856404; padding:10px; font-size:11px; border-radius:5px; margin-bottom:15px; border:1px solid #ffeeba;">
-                    <strong>⚠️ INFO PENTING:</strong> Klik tombol di bawah ini. Invoice resmi & ongkir akan dikirim admin via WhatsApp.
+                    <strong>⚠️ INFO:</strong> Klik tombol di bawah. Invoice & Ongkir akan dikirim Admin via WhatsApp.
                 </div>
 
                 <button onclick="checkoutWhatsApp()" class="btn-wa">
@@ -90,13 +90,12 @@
             <div id="panel-daftar">
                 <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
                     <h3 style="color:#42b549; margin-top:0;">Gabung Jadi Mitra</h3>
-                    <p style="font-size:12px; color:#666; margin-bottom:15px;">Dapatkan komisi dari setiap penjualan lewat link kamu!</p>
                     <form onsubmit="daftarMitra(event)">
                         <input id="m-nama" class="input-field" placeholder="Nama Lengkap" required>
                         <input id="m-hp" class="input-field" type="number" placeholder="No WhatsApp (08...)" required>
-                        <input id="m-bank" class="input-field" placeholder="Nama Bank & No Rekening" required>
-                        <input id="m-tiktok" class="input-field" placeholder="Username TikTok (@contoh)" required>
-                        <input id="m-code" class="input-field" placeholder="Request Kode Unik (Cth: BUDI01)" required>
+                        <input id="m-bank" class="input-field" placeholder="Nama Bank & No Rek" required>
+                        <input id="m-tiktok" class="input-field" placeholder="Username TikTok" required>
+                        <input id="m-code" class="input-field" placeholder="Request Kode (Cth: BUDI01)" required>
                         <button type="submit" class="btn-wa">Kirim Pendaftaran</button>
                     </form>
                 </div>
@@ -104,40 +103,24 @@
 
             <div id="panel-cek" style="display:none;">
                 <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
-                    <h3 style="margin-top:0;">Cek Status / Login</h3>
-                    
+                    <h3 style="margin-top:0;">Login Mitra</h3>
                     <div id="login-form">
-                        <p style="font-size:12px; color:#666; margin-bottom:10px;">Masukkan nomor WA yang terdaftar.</p>
                         <input id="cek-hp" class="input-field" type="number" placeholder="Nomor WhatsApp...">
                         <button onclick="cekStatusMitra()" class="btn-wa" style="background:#333;">Masuk Dashboard</button>
                     </div>
 
                     <div id="mitra-dash" style="display:none; text-align:center;">
-                        <div style="background:#e8f5e9; padding:15px; border-radius:8px; border:1px solid #c8e6c9; margin-bottom:15px;">
-                            <h2 style="color:#2e7d32; margin:0 0 5px 0;">✅ AKUN AKTIF</h2>
-                            <p style="font-size:14px;">Halo, <b id="dash-nama">User</b></p>
-                        </div>
-
-                        <p style="font-size:12px; font-weight:bold; text-align:left; margin-bottom:5px;">Kode Referral Anda:</p>
-                        <div style="background:#f5f5f5; padding:10px; margin-bottom:15px; border:1px dashed #333; font-weight:bold; font-family:monospace; letter-spacing:2px; font-size:16px;" id="dash-code">CODE</div>
-                        
-                        <p style="font-size:12px; font-weight:bold; text-align:left; margin-bottom:5px;">Link Jualan Otomatis:</p>
-                        <input id="dash-link" class="input-field" readonly style="font-size:11px; background:#eee; color:#555;">
-                        
-                        <button onclick="copyLink()" class="btn-wa" style="background:#333; margin-top:5px;">
-                            <i class="ri-file-copy-line"></i> Salin Link
-                        </button>
+                        <h2 style="color:#2e7d32;">✅ AKUN AKTIF</h2>
+                        <p>Halo, <b id="dash-nama">User</b></p>
+                        <div style="background:#f5f5f5; padding:10px; margin:15px 0; border:1px dashed #333; font-weight:bold; font-family:monospace;" id="dash-code">CODE</div>
+                        <input id="dash-link" class="input-field" readonly style="font-size:11px; background:#eee;">
+                        <button onclick="copyLink()" class="btn-wa" style="background:#333; margin-top:5px;">Salin Link</button>
                     </div>
-                    
                     <p id="msg-status" style="text-align:center; margin-top:15px; font-weight:bold; font-size:13px;"></p>
                 </div>
             </div>
         </main>
     </div>
-
-    <a href="https://wa.me/6285700800278" target="_blank" style="position:fixed; bottom:80px; right:20px; background:#25D366; color:white; width:50px; height:50px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:900; text-decoration:none;">
-        <i class="ri-whatsapp-line"></i>
-    </a>
 
     <nav class="bottom-nav">
         <button class="b-nav-item active" onclick="switchTab('store')" id="nav-store">
@@ -155,4 +138,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
