@@ -1,5 +1,5 @@
-// SETUP SUPABASE
-const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co/'; 
+// ================= KONFIGURASI =================
+const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co'; 
 const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
 const noAdmin = '6285700800278';
 const db = supabase.createClient(supabaseUrl, supabaseKey);
@@ -8,9 +8,7 @@ const db = supabase.createClient(supabaseUrl, supabaseKey);
 let fileToUpload = null;
 let tempVariants = []; 
 
-// ==========================================
-// 1. FUNGSI NAVIGASI & UI
-// ==========================================
+// ================= 1. FUNGSI NAVIGASI & UI =================
 function showAddForm() {
     document.getElementById('view-product-list').style.display = 'none';
     document.getElementById('view-product-form').style.display = 'block';
@@ -26,16 +24,12 @@ function cancelForm() {
     document.getElementById('view-product-form').style.display = 'none';
 }
 
-// ==========================================
-// 2. LOGIKA MANAJEMEN MITRA (AFFILIATE)
-// ==========================================
+// ================= 2. LOGIKA MANAJEMEN MITRA (AFFILIATE) =================
 
-// Fungsi untuk mengambil data mitra dari Supabase
 async function fetchAffiliates() {
     const list = document.getElementById('affiliate-list-admin');
     if (!list) return;
 
-    // Mengambil data dari tabel 'affiliates'
     const { data, error } = await db
         .from('affiliates')
         .select('*')
@@ -58,7 +52,11 @@ async function fetchAffiliates() {
                 <b>${m.full_name}</b><br>
                 <small style="color:#666;">@${m.tiktok_account || '-'}</small>
             </td>
-            <td style="padding: 12px;">${m.phone_number}</td>
+            <td style="padding: 12px;">
+                <a href="https://wa.me/${m.phone_number}" target="_blank" style="text-decoration:none; color:#42b549; font-weight:bold;">
+                    <i class="ri-whatsapp-line"></i> ${m.phone_number}
+                </a>
+            </td>
             <td style="padding: 12px;">
                 <code style="background:#e0f2f1; color:#00796b; padding:2px 5px; border-radius:4px; font-weight:bold;">
                     ${m.referral_code}
@@ -70,36 +68,57 @@ async function fetchAffiliates() {
                     '<span class="status-badge status-pending">Menunggu</span>'}
             </td>
             <td style="padding: 12px;">
-                ${!m.approved ? 
-                    `<button onclick="approveAffiliate('${m.id}')" style="background:#42b549; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">Setujui</button>` : 
-                    `<button disabled style="background:#ccc; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:11px;">Approved</button>`}
+                <div style="display:flex; gap:5px;">
+                    ${!m.approved ? 
+                        `<button onclick='approveAffiliate(${JSON.stringify(m)})' style="background:#42b549; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">Setujui</button>` : 
+                        `<button disabled style="background:#ccc; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:11px;">Approved</button>`}
+                    
+                    <button onclick="deleteAffiliate('${m.id}')" style="background:#ff4d4d; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:14px;">🗑️</button>
+                </div>
             </td>
         </tr>
     `).join('');
 }
 
-// Fungsi untuk menyetujui mitra (Update status approved ke true)
-// Versi Otomatis: Cukup Update Database, Tidak Perlu Buka WA
-window.approveAffiliate = async (id) => {
-    if (!confirm("Setujui mitra ini? Status akan berubah jadi AKTIF di Dashboard mereka.")) return;
+// Fungsi HAPUS MITRA (BARU)
+window.deleteAffiliate = async (id) => {
+    if (!confirm("Yakin ingin menghapus data mitra ini secara permanen?")) return;
+
+    const { error } = await db
+        .from('affiliates')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        alert("Gagal menghapus: " + error.message);
+    } else {
+        fetchAffiliates(); // Refresh tabel setelah dihapus
+    }
+};
+
+// Fungsi Approve (Tanpa WA Popup sesuai request terakhir)
+window.approveAffiliate = async (mitra) => {
+    // Karena passing object di HTML kadang error kutip, kita ambil ID-nya saja jika mau, 
+    // tapi cara JSON.stringify di atas sudah aman asal tidak ada karakter aneh.
+    // Untuk amannya, kita pakai object 'mitra' langsung.
+
+    if (!confirm(`Setujui ${mitra.full_name}? Status akan jadi AKTIF.`)) return;
 
     const { error } = await db
         .from('affiliates')
         .update({ approved: true })
-        .eq('id', id);
+        .eq('id', mitra.id);
 
     if (error) {
-        alert("Gagal: " + error.message);
+        alert("Gagal update database: " + error.message);
     } else {
-        // Hapus notifikasi WA, cukup refresh tabel saja
-        alert("Berhasil! Mitra sekarang bisa melihat kode referral mereka di menu Dashboard Mitra.");
+        alert("Berhasil! Mitra sudah aktif dan bisa melihat link di dashboard mereka.");
         fetchAffiliates(); 
     }
 };
 
-// ==========================================
-// 3. LOGIKA PRODUK & VARIAN (SUDAH ADA)
-// ==========================================
+
+// ================= 3. LOGIKA PRODUK & VARIAN =================
 function previewImage(event) {
     const file = event.target.files[0];
     if (file) {
@@ -169,7 +188,7 @@ async function loadProducts() {
     container.innerHTML = "Memuat...";
     
     const search = document.getElementById('search-input').value;
-    let query = db.from('products').select('*').order('name', { ascending: true }); // Diurutkan berdasarkan nama agar klaster rapi
+    let query = db.from('products').select('*').order('name', { ascending: true });
     if(search) query = query.ilike('name', `%${search}%`);
 
     const { data, error } = await query;
@@ -256,11 +275,8 @@ window.deleteProduct = async (id) => {
     }
 };
 
-// ==========================================
-// 4. INISIALISASI SAAT HALAMAN DIMUAT
-// ==========================================
+// ================= 4. INISIALISASI =================
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
-    fetchAffiliates(); // Memuat daftar mitra saat admin dibuka
+    fetchAffiliates();
 });
-
