@@ -169,21 +169,23 @@ function updateBadge() {
 
 // ================= CHECKOUT SYSTEM =================
 
+// ================= CHECKOUT SYSTEM (VERSI BARU ANTI-CORS) =================
+
 window.checkoutWhatsApp = async function() {
     if (cart.length === 0) return alert("Keranjang kosong!");
 
     const name = document.getElementById('cart-name').value;
     const phone = document.getElementById('cart-phone').value;
+    
+    // Alamat Jalan
     const addr = document.getElementById('cart-address').value;
+    
+    // Wilayah (Manual Input)
+    const location = document.getElementById('cart-location').value;
 
-    // Ambil Data Wilayah (Aman)
-    const getTxt = (id) => {
-        const el = document.getElementById(id);
-        return el.options[el.selectedIndex]?.text || '-';
-    };
-    const wilayah = `${getTxt('cart-prov')}, ${getTxt('cart-city')}, ${getTxt('cart-dist')}`;
-
-    if (!name || !phone || !addr) return alert("Mohon lengkapi Nama, WA, dan Alamat!");
+    if (!name || !phone || !addr || !location) {
+        return alert("Mohon lengkapi Nama, WA, Alamat, dan Kota!");
+    }
 
     // Button Loading
     const btn = document.querySelector('#cart-modal .btn-wa');
@@ -196,8 +198,11 @@ window.checkoutWhatsApp = async function() {
     const ref = sessionStorage.getItem('referral_code') || '-';
     const itemsList = cart.map(i => `- ${i.name} (${i.qty}x)`).join('\n');
     
+    // Gabungkan Alamat
+    const fullAddress = `${addr}, ${location}`;
+
     // Pesan WA
-    const msg = `*ORDER BARU*\nNama: ${name}\nWA: ${phone}\nAlamat: ${addr}\nWilayah: ${wilayah}\n\n*Pesanan:*\n${itemsList}\n\n*Total Estimasi: Rp ${total.toLocaleString()}*\nKode Mitra: ${ref}`;
+    const msg = `*ORDER BARU*\nNama: ${name}\nWA: ${phone}\nAlamat: ${fullAddress}\n\n*Pesanan:*\n${itemsList}\n\n*Total Estimasi: Rp ${total.toLocaleString()}*\nKode Mitra: ${ref}`;
     const linkWA = `https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`;
 
     try {
@@ -205,7 +210,7 @@ window.checkoutWhatsApp = async function() {
         await db.from('orders').insert([{
             customer_name: name,
             customer_phone: phone,
-            shipping_address: `${addr}, ${wilayah}`,
+            shipping_address: fullAddress,
             total_amount: total,
             order_items: cart,
             referral_code: ref
@@ -276,3 +281,4 @@ window.loadKecamatan = async function(id) {
     el.disabled = false; el.style.background = "white";
     el.innerHTML = '<option value="">Pilih Kecamatan...</option>' + data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
 };
+
