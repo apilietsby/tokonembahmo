@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     fetchProducts();
     loadProvinces();
-    updateBadge(); // Reset badge saat load
+    updateBadge(); 
 });
 
 // ================= TAB NAVIGATION =================
@@ -52,10 +52,13 @@ async function fetchProducts() {
 function renderProducts(list) {
     const container = document.getElementById('product-list');
     container.innerHTML = list.map(p => {
-        // Cek apakah ada link tiktok
+        // PERBAIKAN: Ikon TikTok menggunakan ri-tiktok-fill
         const tiktokBtn = p.default_tiktok_link 
-            ? `<a href="${p.default_tiktok_link}" target="_blank" class="btn-tiktok"><i class="ri-music-fill"></i></a>` 
+            ? `<a href="${p.default_tiktok_link}" target="_blank" class="btn-tiktok"><i class="ri-tiktok-fill"></i></a>` 
             : '';
+
+        // PERBAIKAN: Menambahkan Deskripsi (p-desc)
+        const descShort = p.description ? p.description.substring(0, 40) + '...' : '';
 
         return `
         <div class="product-card">
@@ -64,6 +67,7 @@ function renderProducts(list) {
             </div>
             <div class="card-info">
                 <div class="p-name" onclick="addToCart('${p.id}')">${p.name}</div>
+                <div class="p-desc">${descShort}</div>
                 <div class="p-price">Rp ${p.price.toLocaleString()}</div>
                 
                 <div class="card-actions">
@@ -91,31 +95,22 @@ window.addToCart = function(id) {
     
     updateBadge();
     
-    // Animasi kecil (Opsional)
+    // Animasi tombol
     const btn = event.target;
-    const oldText = btn.innerText;
     if(btn.tagName === 'BUTTON') {
+        const oldText = btn.innerText;
         btn.innerText = "✔ Masuk";
-        setTimeout(() => btn.innerText = oldText, 1000);
+        setTimeout(() => btn.innerText = oldText, 800);
     }
 };
 
 function updateBadge() {
     const count = cart.reduce((a,b) => a + b.qty, 0);
-    
-    // Update Badge Bawah
     const badgeBottom = document.getElementById('cart-badge');
-    if(badgeBottom) {
-        badgeBottom.innerText = count;
-        badgeBottom.style.display = count > 0 ? 'block' : 'none';
-    }
-
-    // Update Badge Atas (Header Baru)
     const badgeTop = document.getElementById('cart-badge-top');
-    if(badgeTop) {
-        badgeTop.innerText = count;
-        badgeTop.style.display = count > 0 ? 'block' : 'none';
-    }
+    
+    if(badgeBottom) { badgeBottom.innerText = count; badgeBottom.style.display = count > 0 ? 'block' : 'none'; }
+    if(badgeTop) { badgeTop.innerText = count; badgeTop.style.display = count > 0 ? 'block' : 'none'; }
 }
 
 function renderCart() {
@@ -155,44 +150,62 @@ window.changeQty = function(idx, delta) {
     updateBadge();
 };
 
+// PERBAIKAN UTAMA: CHECKOUT WHATSAPP
 window.checkoutWhatsApp = async function() {
     if(cart.length === 0) return alert("Keranjang kosong!");
     
     const name = document.getElementById('c-name').value;
     const phone = document.getElementById('c-phone').value;
     const addr = document.getElementById('c-addr').value;
-    const prov = document.getElementById('c-prov').selectedOptions[0]?.text;
-    const city = document.getElementById('c-city').selectedOptions[0]?.text;
-    const dist = document.getElementById('c-dist').selectedOptions[0]?.text;
+    
+    // Ambil teks wilayah dengan aman (Safe Check)
+    const provEl = document.getElementById('c-prov');
+    const cityEl = document.getElementById('c-city');
+    const distEl = document.getElementById('c-dist');
 
-    if(!name || !phone || !addr) return alert("Lengkapi data pengiriman!");
+    const prov = provEl.selectedIndex >= 0 ? provEl.options[provEl.selectedIndex].text : '-';
+    const city = cityEl.selectedIndex >= 0 ? cityEl.options[cityEl.selectedIndex].text : '-';
+    const dist = distEl.selectedIndex >= 0 ? distEl.options[distEl.selectedIndex].text : '-';
+
+    if(!name || !phone || !addr) return alert("Mohon lengkapi Nama, WA, dan Alamat!");
 
     const btn = document.querySelector('#cart-view .btn-wa');
-    btn.innerHTML = "Memproses...";
+    btn.innerHTML = "Membuka WhatsApp...";
     btn.disabled = true;
 
-    // Simpan ke Supabase Order
+    // Siapkan Data
     const total = cart.reduce((a,b) => a + (b.price * b.qty), 0);
     const ref = sessionStorage.getItem('referral_code') || '-';
     const fullAddr = `${addr}, ${dist}, ${city}, ${prov}`;
-
-    await db.from('orders').insert([{
-        customer_name: name, customer_phone: phone, shipping_address: fullAddr,
-        total_amount: total, order_items: cart, referral_code: ref
-    }]);
-
-    // Kirim WA
+    
+    // Siapkan Link WA DULUAN (Supaya kalau DB error, WA tetap jalan)
     const items = cart.map(c => `- ${c.name} x${c.qty}`).join('\n');
     const msg = `*ORDER BARU*\nNama: ${name}\nWA: ${phone}\nAlamat: ${fullAddr}\n\n*Pesanan:*\n${items}\n\n*Total: Rp ${total.toLocaleString()}*\nKode Ref: ${ref}`;
-    
-    window.open(`https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`, '_blank');
-    
-    cart = []; updateBadge(); renderCart();
-    btn.innerHTML = "Order via WhatsApp";
-    btn.disabled = false;
+    const waLink = `https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`;
+
+    try {
+        // Coba Simpan ke Database (Background Process)
+        const { error } = await db.from('orders').insert([{
+            customer_name: name, customer_phone: phone, shipping_address: fullAddr,
+            total_amount: total, order_items: cart, referral_code: ref
+        }]);
+        
+        if(error) console.log("Info: Gagal simpan DB, tapi lanjut WA.");
+
+    } catch (e) {
+        console.log("Error sistem:", e);
+    } finally {
+        // APAPUN YANG TERJADI, BUKA WHATSAPP
+        window.open(waLink, '_blank');
+        
+        // Reset
+        cart = []; updateBadge(); renderCart();
+        btn.innerHTML = "Order via WhatsApp";
+        btn.disabled = false;
+    }
 };
 
-// ================= MITRA LOGIC =================
+// ================= MITRA & API WILAYAH (SAMA SEPERTI SEBELUMNYA) =================
 window.showMitraTab = function(type) {
     document.getElementById('panel-daftar').style.display = type === 'daftar' ? 'block' : 'none';
     document.getElementById('panel-cek').style.display = type === 'cek' ? 'block' : 'none';
@@ -210,7 +223,6 @@ window.daftarMitra = async function(e) {
         referral_code: document.getElementById('m-code').value,
         approved: false
     };
-    
     const { error } = await db.from('affiliates').insert([data]);
     if(error) alert("Gagal: " + error.message);
     else { alert("Berhasil! Tunggu persetujuan admin."); e.target.reset(); }
@@ -220,12 +232,9 @@ window.cekStatusMitra = async function() {
     const hp = document.getElementById('cek-hp').value;
     const { data, error } = await db.from('affiliates').select('*').eq('phone_number', hp).single();
     const msg = document.getElementById('msg-status');
-    
-    if(error || !data) {
-        msg.innerText = "Nomor tidak ditemukan!"; msg.style.color = "red";
-    } else if (!data.approved) {
-        msg.innerText = "Akun masih MENUNGGU persetujuan."; msg.style.color = "orange";
-    } else {
+    if(error || !data) { msg.innerText = "Nomor tidak ditemukan!"; msg.style.color = "red"; }
+    else if (!data.approved) { msg.innerText = "Akun MENUNGGU persetujuan."; msg.style.color = "orange"; }
+    else {
         document.getElementById('login-form').style.display = 'none';
         document.getElementById('mitra-dash').style.display = 'block';
         document.getElementById('dash-nama').innerText = data.full_name;
@@ -240,7 +249,6 @@ window.copyLink = function() {
     alert("Link tersalin!");
 };
 
-// ================= API WILAYAH =================
 async function loadProvinces() {
     try {
         const r = await fetch('https://kanglerian.github.io/api-wilayah-indonesia/api/provinces.json');
