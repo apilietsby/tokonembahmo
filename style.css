@@ -1,107 +1,91 @@
-/* ================= VARIABLES ================= */
+/* ================= TEMA: HIJAU DONGKER ================= */
 :root {
-    --primary: #42b549; /* Hijau Tokopedia */
-    --primary-dark: #35963b;
-    --bg-color: #f0f3f7;
+    --primary: #0f5132; /* Hijau Dongker / Dark Teal */
+    --primary-light: #146c43;
+    --accent: #d1e7dd;
+    --bg-color: #f3f4f6;
     --white: #ffffff;
-    --text-dark: #333333;
-    --shadow: 0 1px 6px rgba(0,0,0,0.1);
-    --radius: 8px;
+    --text-dark: #1f2937;
+    --radius: 10px;
+    --shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 /* ================= RESET ================= */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Poppins', sans-serif; background: var(--bg-color); color: var(--text-dark); padding-bottom: 80px; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+body { background: var(--bg-color); color: var(--text-dark); padding-bottom: 80px; }
 a { text-decoration: none; color: inherit; }
 
 /* ================= HEADER ================= */
 header {
-    background: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 15px;
+    background: var(--primary); padding: 15px 20px; position: sticky; top: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center; color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
-.search-container {
-    flex: 1; position: relative; background: #f5f5f5; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center;
-}
-.search-icon-inside { color: #888; font-size: 18px; margin-right: 8px; }
-.search-input { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; }
-.header-icons { display: flex; gap: 15px; }
-.header-icon { font-size: 24px; color: #555; position: relative; }
+.brand { font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.cart-icon-top { position: relative; cursor: pointer; font-size: 22px; }
 .badge {
-    position: absolute; top: -5px; right: -5px; background: #ef144a; color: white;
-    font-size: 10px; font-weight: bold; padding: 2px 5px; border-radius: 50%; min-width: 18px; text-align: center;
+    position: absolute; top: -8px; right: -8px; background: #ef4444; color: white;
+    font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 50%;
 }
 
-/* ================= BANNER & GRID ================= */
-.hero-banner img { width: 100%; border-radius: 0 0 15px 15px; object-fit: cover; }
-.product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px; }
+/* ================= CONTAINER ================= */
+.container { max-width: 600px; margin: 0 auto; padding: 15px; }
 
-/* ================= KARTU PRODUK ================= */
+/* ================= PRODUK GRID ================= */
+.product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .product-card {
-    background: white; border-radius: 8px; overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+    background: white; border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s;
 }
-.img-wrapper {
-    width: 100%; padding-top: 100%; /* Kotak */
-    position: relative; background: #eee;
-}
-.img-wrapper img {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
-}
-.card-info { padding: 10px; display: flex; flex-direction: column; flex: 1; }
+.product-card:active { transform: scale(0.98); }
+.img-wrapper { width: 100%; padding-top: 100%; position: relative; background: #eee; }
+.img-wrapper img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+.card-info { padding: 12px; }
+.p-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; line-height: 1.3; }
+.p-price { color: var(--primary); font-weight: 700; font-size: 15px; }
 
-.p-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 34px; }
-.p-desc { font-size: 10px; color: #888; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.p-price { color: var(--primary); font-weight: 700; font-size: 14px; margin-top: auto; margin-bottom: 8px; }
-
-/* TOMBOL AKSI */
-.card-actions { display: flex; gap: 8px; }
-.btn-add {
-    flex: 1; background: var(--primary); color: white; border: none; padding: 8px;
-    border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;
-}
-.btn-tiktok {
-    width: 36px; height: 34px; background: #000; color: white; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center; font-size: 18px;
-}
-
-/* ================= MODAL / POPUP (WAJIB ADA) ================= */
+/* ================= MODAL / POPUP (DETAIL & KERANJANG) ================= */
 .modal {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: flex-end;
 }
 .modal-content {
-    background: white; width: 100%; max-width: 500px;
-    border-radius: 15px 15px 0 0; padding: 20px; animation: slideUp 0.3s;
+    background: white; width: 100%; max-width: 600px;
+    border-radius: 20px 20px 0 0; padding: 25px; animation: slideUp 0.3s;
     max-height: 90vh; overflow-y: auto; position: relative;
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.close-btn { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; color: #888; }
 
-/* ================= KERANJANG ITEM ================= */
-.cart-item { display: flex; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-.cart-item img { width: 60px; height: 60px; border-radius: 6px; object-fit: cover; }
-.qty-control { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
-.qty-btn { width: 24px; height: 24px; border: 1px solid #ddd; background: white; border-radius: 4px; font-weight: bold; }
+/* Tampilan Detail Produk di Popup */
+.detail-img { width: 100%; height: 250px; object-fit: cover; border-radius: var(--radius); margin-bottom: 15px; }
+.qty-wrapper { display: flex; align-items: center; gap: 15px; margin: 15px 0; }
+.qty-btn { 
+    width: 35px; height: 35px; border: 1px solid #ccc; background: white; 
+    border-radius: 5px; font-weight: bold; font-size: 18px; cursor: pointer;
+}
+.qty-val { font-size: 18px; font-weight: bold; width: 30px; text-align: center; }
+
+/* ================= UTILITIES ================= */
+.btn-primary {
+    background: var(--primary); color: white; border: none; width: 100%; padding: 14px;
+    border-radius: var(--radius); font-weight: bold; font-size: 15px; cursor: pointer;
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+}
+.btn-wa { background: #25D366; color: white; border: none; width: 100%; padding: 14px; border-radius: var(--radius); font-weight: bold; font-size: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.input-field { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
 
 /* ================= NAVBAR BAWAH ================= */
 .bottom-nav {
     position: fixed; bottom: 0; left: 0; width: 100%; background: white;
-    display: flex; justify-content: space-around; padding: 10px 0;
+    display: flex; justify-content: space-around; padding: 12px 0;
     border-top: 1px solid #eee; z-index: 100;
 }
-.nav-item {
-    text-align: center; font-size: 10px; color: #888; width: 100%; background: none; border: none;
-}
-.nav-item i { font-size: 20px; display: block; margin-bottom: 2px; }
+.nav-item { background: none; border: none; text-align: center; font-size: 10px; color: #9ca3af; cursor: pointer; width: 100%; }
+.nav-item i { font-size: 22px; display: block; margin-bottom: 2px; }
 .nav-item.active { color: var(--primary); font-weight: bold; }
 
-/* KOMPONEN UMUM */
-.btn-wa {
-    background: #25D366; color: white; border: none; width: 100%; padding: 12px;
-    border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px;
-}
-.input-field {
-    width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd;
-    border-radius: 6px; background: #fcfcfc; font-size: 13px;
+/* ================= LOGIN OVERLAY (ADMIN) ================= */
+#login-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary);
+    z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;
 }
