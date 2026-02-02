@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tokonembahmo</title>
+    <title>TOKONEMBAHMO - Toko Serba Ada</title>
+    
     <link rel="stylesheet" href="style.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -16,6 +19,11 @@
             <i class="ri-store-2-fill"></i> Tokonembahmo
         </div>
         <div class="nav-icons">
+            <div style="flex-grow:1; margin-right:15px; display:flex; align-items:center; background:#f5f5f5; padding:5px 10px; border-radius:20px;">
+                <i class="ri-search-line" style="color:#888;"></i>
+                <input type="text" id="search-input" placeholder="Cari..." style="border:none; background:transparent; outline:none; font-size:13px; margin-left:5px; width:100%;" onkeyup="searchProduct()">
+            </div>
+            
             <div class="cart-icon-top" onclick="switchTab('cart')">
                 <i class="ri-shopping-cart-2-line"></i>
                 <span id="cart-badge-top" class="badge">0</span>
@@ -23,56 +31,73 @@
         </div>
     </nav>
 
-    <div class="container" style="padding-top: 70px;"> <main id="store-view">
-            <div style="background:white; padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <i class="ri-search-line" style="color:#888; align-self:center; margin-left:5px;"></i>
-                <input type="text" id="search-input" class="input-field" placeholder="Cari barang..." style="margin:0; border:none; background:transparent;" onkeyup="searchProduct()">
+    <div class="container" style="padding-top: 70px;">
+        
+        <main id="store-view">
+            <div class="hero-banner" style="margin-bottom:15px; border-radius:8px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                <img src="https://placehold.co/600x250/42b549/white?text=PROMO+SPESIAL+HARI+INI" style="width:100%; display:block;" alt="Banner Promo">
             </div>
+
+            <div style="padding: 5px 0 15px 0; font-weight: bold; font-size: 15px; color: #333; display:flex; align-items:center; gap:5px;">
+                <i class="ri-fire-fill" style="color:orange;"></i> Rekomendasi Untukmu
+            </div>
+
             <div id="product-list" class="product-grid">
-                <p style="text-align:center; width:200%;">Memuat produk...</p>
+                <p style="text-align:center; grid-column:span 2; padding:30px; color:#999;">Sedang memuat produk...</p>
             </div>
         </main>
 
         <main id="cart-view" style="display: none;">
-            <h3>Keranjang Belanja</h3>
-            <div id="cart-items" style="margin-top:15px;"></div>
+            <h3 style="margin-bottom:15px; display:flex; align-items:center; gap:10px;">
+                <i class="ri-shopping-bag-3-fill" style="color:#42b549;"></i> Keranjang Belanja
+            </h3>
             
-            <div style="background:white; padding:15px; border-radius:8px; margin-top:20px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
-                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:15px;">
-                    <span>Total:</span>
+            <div id="cart-items" style="margin-bottom:20px;"></div>
+            
+            <div style="background:white; padding:15px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:15px; font-size:16px; border-bottom:1px dashed #ddd; padding-bottom:10px;">
+                    <span>Total Estimasi:</span>
                     <span id="cart-total" style="color:#42b549;">Rp 0</span>
                 </div>
                 
-                <p style="font-size:12px; font-weight:bold;">Data Pengiriman:</p>
+                <p style="font-size:12px; font-weight:bold; margin-bottom:10px; color:#555;">Data Pengiriman:</p>
                 <input type="text" id="c-name" class="input-field" placeholder="Nama Penerima">
-                <input type="number" id="c-phone" class="input-field" placeholder="No WhatsApp">
-                <select id="c-prov" class="input-field"><option value="">Pilih Provinsi</option></select>
-                <select id="c-city" class="input-field" disabled><option>Pilih Kota/Kab</option></select>
-                <select id="c-dist" class="input-field" disabled><option>Pilih Kecamatan</option></select>
-                <textarea id="c-addr" class="input-field" placeholder="Alamat Lengkap (Jalan, RT/RW)"></textarea>
+                <input type="number" id="c-phone" class="input-field" placeholder="No WhatsApp Aktif">
+                
+                <div style="display:grid; gap:10px; margin-bottom:10px;">
+                    <select id="c-prov" class="input-field" style="margin:0;"><option value="">Pilih Provinsi</option></select>
+                    <select id="c-city" class="input-field" style="margin:0;" disabled><option>Pilih Kota/Kab</option></select>
+                    <select id="c-dist" class="input-field" style="margin:0;" disabled><option>Pilih Kecamatan</option></select>
+                </div>
+                
+                <textarea id="c-addr" class="input-field" rows="2" placeholder="Alamat Lengkap (Jalan, RT/RW, Patokan)"></textarea>
+
+                <div class="checkout-note" style="background:#fff3cd; color:#856404; padding:10px; font-size:11px; border-radius:5px; margin-bottom:15px; border:1px solid #ffeeba;">
+                    <strong>⚠️ INFO PENTING:</strong> Klik tombol di bawah ini. Invoice resmi & ongkir akan dikirim admin via WhatsApp.
+                </div>
 
                 <button onclick="checkoutWhatsApp()" class="btn-wa">
-                    <i class="ri-whatsapp-line"></i> Order via WhatsApp
+                    <i class="ri-whatsapp-line"></i> Checkout via WhatsApp
                 </button>
             </div>
         </main>
 
         <main id="mitra-view" style="display: none;">
-            <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <button onclick="showMitraTab('daftar')" class="btn-wa" style="background:#42b549;" id="mt-daftar">Daftar</button>
-                <button onclick="showMitraTab('cek')" class="btn-wa" style="background:#ccc;" id="mt-cek">Login</button>
+            <div style="display:flex; gap:10px; margin-bottom:20px; background:white; padding:5px; border-radius:8px;">
+                <button onclick="showMitraTab('daftar')" class="btn-wa" style="background:#42b549; flex:1;" id="mt-daftar">Daftar</button>
+                <button onclick="showMitraTab('cek')" class="btn-wa" style="background:#f0f0f0; color:#333; flex:1;" id="mt-cek">Login</button>
             </div>
 
             <div id="panel-daftar">
                 <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
-                    <h3 style="color:#42b549;">Daftar Mitra</h3>
-                    <p style="font-size:12px; color:#666; margin-bottom:15px;">Dapatkan komisi dari setiap penjualan!</p>
+                    <h3 style="color:#42b549; margin-top:0;">Gabung Jadi Mitra</h3>
+                    <p style="font-size:12px; color:#666; margin-bottom:15px;">Dapatkan komisi dari setiap penjualan lewat link kamu!</p>
                     <form onsubmit="daftarMitra(event)">
                         <input id="m-nama" class="input-field" placeholder="Nama Lengkap" required>
-                        <input id="m-hp" class="input-field" type="number" placeholder="No WA" required>
-                        <input id="m-bank" class="input-field" placeholder="Bank & No Rek" required>
-                        <input id="m-tiktok" class="input-field" placeholder="Username TikTok" required>
-                        <input id="m-code" class="input-field" placeholder="Request Kode (cth: BUDI01)" required>
+                        <input id="m-hp" class="input-field" type="number" placeholder="No WhatsApp (08...)" required>
+                        <input id="m-bank" class="input-field" placeholder="Nama Bank & No Rekening" required>
+                        <input id="m-tiktok" class="input-field" placeholder="Username TikTok (@contoh)" required>
+                        <input id="m-code" class="input-field" placeholder="Request Kode Unik (Cth: BUDI01)" required>
                         <button type="submit" class="btn-wa">Kirim Pendaftaran</button>
                     </form>
                 </div>
@@ -80,37 +105,53 @@
 
             <div id="panel-cek" style="display:none;">
                 <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.1);">
-                    <h3>Cek Status / Login</h3>
+                    <h3 style="margin-top:0;">Cek Status / Login</h3>
+                    
                     <div id="login-form">
-                        <input id="cek-hp" class="input-field" type="number" placeholder="Masukkan No WA terdaftar">
-                        <button onclick="cekStatusMitra()" class="btn-wa" style="background:#333;">Masuk</button>
+                        <p style="font-size:12px; color:#666; margin-bottom:10px;">Masukkan nomor WA yang terdaftar.</p>
+                        <input id="cek-hp" class="input-field" type="number" placeholder="Nomor WhatsApp...">
+                        <button onclick="cekStatusMitra()" class="btn-wa" style="background:#333;">Masuk Dashboard</button>
                     </div>
 
-                    <div id="mitra-dash" style="display:none; text-align:center; margin-top:20px;">
-                        <h2 style="color:green;">✅ AKUN AKTIF</h2>
-                        <p>Halo, <b id="dash-nama">User</b></p>
-                        <div style="background:#eee; padding:10px; margin:15px 0; border:1px dashed #333; font-weight:bold; font-family:monospace;" id="dash-code">CODE</div>
-                        <input id="dash-link" class="input-field" readonly>
-                        <button onclick="copyLink()" class="btn-wa" style="background:#333;">Salin Link</button>
+                    <div id="mitra-dash" style="display:none; text-align:center;">
+                        <div style="background:#e8f5e9; padding:15px; border-radius:8px; border:1px solid #c8e6c9; margin-bottom:15px;">
+                            <h2 style="color:#2e7d32; margin:0 0 5px 0;">✅ AKUN AKTIF</h2>
+                            <p style="font-size:14px;">Halo, <b id="dash-nama">User</b></p>
+                        </div>
+
+                        <p style="font-size:12px; font-weight:bold; text-align:left; margin-bottom:5px;">Kode Referral Anda:</p>
+                        <div style="background:#f5f5f5; padding:10px; margin-bottom:15px; border:1px dashed #333; font-weight:bold; font-family:monospace; letter-spacing:2px; font-size:16px;" id="dash-code">CODE</div>
+                        
+                        <p style="font-size:12px; font-weight:bold; text-align:left; margin-bottom:5px;">Link Jualan Otomatis:</p>
+                        <input id="dash-link" class="input-field" readonly style="font-size:11px; background:#eee; color:#555;">
+                        
+                        <button onclick="copyLink()" class="btn-wa" style="background:#333; margin-top:5px;">
+                            <i class="ri-file-copy-line"></i> Salin Link
+                        </button>
                     </div>
-                    <p id="msg-status" style="text-align:center; margin-top:10px; font-weight:bold;"></p>
+                    
+                    <p id="msg-status" style="text-align:center; margin-top:15px; font-weight:bold; font-size:13px;"></p>
                 </div>
             </div>
         </main>
     </div>
 
-    <div class="bottom-nav">
+    <a href="https://wa.me/6285700800278" target="_blank" style="position:fixed; bottom:80px; right:20px; background:#25D366; color:white; width:50px; height:50px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:900; text-decoration:none;">
+        <i class="ri-whatsapp-line"></i>
+    </a>
+
+    <nav class="bottom-nav">
         <button class="b-nav-item active" onclick="switchTab('store')" id="nav-store">
-            <i class="ri-store-2-line"></i> Toko
+            <i class="ri-store-2-fill"></i> Toko
         </button>
         <button class="b-nav-item" onclick="switchTab('cart')" id="nav-cart" style="position:relative;">
-            <i class="ri-shopping-cart-2-line"></i> Keranjang
+            <i class="ri-shopping-cart-2-fill"></i> Keranjang
             <span id="cart-badge" class="badge">0</span>
         </button>
         <button class="b-nav-item" onclick="switchTab('mitra')" id="nav-mitra">
-            <i class="ri-user-star-line"></i> Mitra
+            <i class="ri-user-star-fill"></i> Mitra
         </button>
-    </div>
+    </nav>
 
     <script src="script.js"></script>
 </body>
