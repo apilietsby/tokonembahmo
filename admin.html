@@ -6,82 +6,31 @@
     <title>Admin Panel</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        /* Override sedikit style untuk admin */
-        body { background: #eef2f5; }
-        .admin-header {
-            background: white; padding: 20px; margin-bottom: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #ddd;
-        }
-        .admin-content { max-width: 1000px; margin: 0 auto; padding: 20px; }
-        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; border-left: 4px solid #42b549; padding-left: 10px; }
-    </style>
 </head>
 <body>
 
-    <div class="admin-header">
-        <h2 style="color:#42b549; margin:0;"><i class="ri-settings-3-line"></i> Admin Tokonembahmo</h2>
-        <a href="index.html" target="_blank" class="btn-wa" style="width:auto; background:#333; text-decoration:none;">
-            Lihat Toko <i class="ri-external-link-line"></i>
-        </a>
+    <div id="login-overlay">
+        <h2>🔒 Admin Login</h2>
+        <input type="password" id="admin-pass" placeholder="Masukkan Password" style="padding:10px; border-radius:5px; border:none; margin:10px 0;">
+        <button onclick="checkLogin()" style="padding:10px 20px; background:white; color:var(--primary); border:none; border-radius:5px; font-weight:bold; cursor:pointer;">MASUK</button>
+        <p id="login-msg" style="margin-top:10px;"></p>
     </div>
 
-    <div class="admin-content">
+    <div class="container" style="max-width: 800px;">
+        <h2 style="margin: 20px 0; color: var(--primary);">Panel Admin</h2>
         
-        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div class="section-title" style="margin:0;">Daftar Produk</div>
-                <button onclick="openForm()" class="btn-wa" style="width:auto;">+ Tambah Produk</button>
-            </div>
-            
-            <div id="product-list-admin" class="product-grid">
-                <p>Memuat data...</p>
-            </div>
-        </div>
-
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-            <div class="section-title">Persetujuan Mitra Affiliate</div>
-            <div style="overflow-x:auto;">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Nama Mitra</th>
-                            <th>WhatsApp</th>
-                            <th>Kode Referral</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="mitra-list">
-                        <tr><td colspan="5">Memuat data...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    <div id="form-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:25px; width:90%; max-width:450px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
-            <h3 style="margin-top:0; color:#42b549;">Form Produk</h3>
-            
-            <label style="font-size:12px; font-weight:bold;">Nama Produk</label>
-            <input id="p-name" class="input-field" placeholder="Contoh: Beras Premium 5kg">
-            
-            <label style="font-size:12px; font-weight:bold;">Harga (Rp)</label>
-            <input id="p-price" class="input-field" type="number" placeholder="Contoh: 65000">
-            
-            <label style="font-size:12px; font-weight:bold;">Link TikTok (Opsional)</label>
-            <input id="p-tiktok" class="input-field" placeholder="https://vt.tiktok.com/...">
-
-            <label style="font-size:12px; font-weight:bold;">Foto Produk</label>
+        <div style="background:white; padding:20px; border-radius:var(--radius); margin-bottom:20px;">
+            <h3>Tambah Produk</h3>
+            <input id="p-name" class="input-field" placeholder="Nama Produk">
+            <input id="p-price" class="input-field" type="number" placeholder="Harga">
+            <input id="p-desc" class="input-field" placeholder="Deskripsi Singkat">
             <input id="p-img" type="file" class="input-field">
-            
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button onclick="document.getElementById('form-overlay').style.display='none'" class="btn-wa" style="background:#ccc; color:#333;">Batal</button>
-                <button onclick="saveProduct()" class="btn-wa">Simpan Produk</button>
-            </div>
+            <button onclick="uploadProduct()" class="btn-primary">Upload Produk</button>
+        </div>
+
+        <div style="background:white; padding:20px; border-radius:var(--radius);">
+            <h3>Persetujuan Mitra</h3>
+            <div id="mitra-list">Memuat...</div>
         </div>
     </div>
 
