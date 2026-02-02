@@ -1,576 +1,238 @@
-// ==========================================
-// SCRIPT.JS - KHUSUS HALAMAN TOKO (PEMBELI)
-// ==========================================
-
-const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co/'; 
-const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
-const noAdmin = '6285700800278';
+// ================= SETUP SUPABASE =================
+const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co';
+const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O'; // Pastikan key ini benar
+const noAdmin = '6285700800278'; 
 const db = supabase.createClient(supabaseUrl, supabaseKey);
 
-let allProducts = [];
-let cart = JSON.parse(localStorage.getItem('tokonembahmo_cart')) || [];
-let selectedVariant = null; // Menyimpan varian yang dipilih di modal
+// Global Variables
+let products = [];
+let cart = [];
 
-// --- 1. KERANJANG & BADGE ---
-function updateCartBadge() {
-    const badge = document.getElementById('cart-badge');
-    const total = cart.reduce((sum, item) => sum + item.qty, 0);
-    if(badge) badge.innerText = total;
-}
-
-function saveCart() {
-    localStorage.setItem('tokonembahmo_cart', JSON.stringify(cart));
-    updateCartBadge();
-}
-
-// --- 2. AMBIL DATA PRODUK ---
-async function fetchProducts() {
-    const list = document.getElementById('product-list');
-    if (!list) return;
-
-    list.innerHTML = '<p style="text-align:center; width:100%; padding:20px;">Memuat koleksi...</p>';
-
-    const { data, error } = await db
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Gagal ambil data:", error.message);
-        list.innerHTML = '<p style="text-align:center; width:100%;">Gagal memuat produk.</p>';
-        return;
-    }
-
-    allProducts = data;
-    renderProducts(allProducts);
-}
-
-// --- 3. RENDER PRODUK KE HALAMAN UTAMA ---
-function renderProducts(products) {
-    const list = document.getElementById('product-list');
-    if (!list) return;
-    list.innerHTML = '';
-
-    products.forEach((p, index) => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        
-        let displayPrice = p.price;
-        if (p.variants && p.variants.length > 0) {
-            displayPrice = Math.min(...p.variants.map(v => v.price));
-        }
-
-        card.innerHTML = `
-            <img src="${p.image_url || 'https://via.placeholder.com/150'}" onclick="openModalDetail(${index})">
-            <div class="product-info">
-                <div class="product-name">${p.name}</div>
-                <div class="product-sku">${p.sku || ''}</div>
-                <div class="product-price">Rp ${displayPrice.toLocaleString()}</div>
-                
-                <div class="product-desc-short">${p.description || 'Tidak ada deskripsi'}</div>
-            </div>
-            <div class="card-actions-product">
-                <button onclick="openModalDetail(${index})" class="btn-mini btn-mini-wa">
-                    <i class="ri-shopping-cart-2-line"></i> Order WA
-                </button>
-                ${p.default_tiktok_link ? `
-                <a href="${p.default_tiktok_link}" target="_blank" class="btn-mini btn-mini-tiktok">
-                    <i class="ri-tiktok-fill"></i> TikTok
-                </a>` : ''}
-            </div>
-        `;
-        list.appendChild(card);
-    });
-}
-
-// --- 4. MODAL DETAIL & LOGIKA VARIAN ---
-function openModalDetail(index) {
-    const p = allProducts[index];
-    if (!p) return;
-
-    selectedVariant = null; // Reset pilihan varian
-    const modal = document.getElementById('product-modal');
-    const imgEl = document.getElementById('modal-img');
-    const titleEl = document.getElementById('modal-title');
-    const priceEl = document.getElementById('modal-price');
-    const descEl = document.getElementById('modal-desc');
-    const btnWA = modal.querySelector('.btn-wa');
-
-    // Tampilan Awal
-    imgEl.src = p.image_url || 'https://via.placeholder.com/150';
-    titleEl.innerText = p.name;
-    descEl.innerText = p.description || "-";
-
-    // Bersihkan dropdown varian lama jika ada
-    const oldSelect = document.getElementById('variant-select');
-    if(oldSelect) oldSelect.remove();
-
-    // Cek jika produk punya varian
-    if (p.variants && p.variants.length > 0) {
-        const select = document.createElement('select');
-        select.id = 'variant-select';
-        select.className = 'input-field';
-        select.style.marginBottom = '15px';
-        
-        let options = '<option value="">-- Pilih Varian --</option>';
-        p.variants.forEach((v, i) => {
-            options += `<option value="${i}">${v.name} - Rp ${v.price.toLocaleString()}</option>`;
-        });
-        select.innerHTML = options;
-
-        select.onchange = function() {
-            const idx = this.value;
-            if(idx === "") {
-                selectedVariant = null;
-                imgEl.src = p.image_url;
-                priceEl.innerText = `Rp ${p.price.toLocaleString()}`;
-            } else {
-                selectedVariant = p.variants[idx];
-                priceEl.innerText = `Rp ${selectedVariant.price.toLocaleString()}`;
-                if(selectedVariant.image) imgEl.src = selectedVariant.image;
-            }
-        };
-        btnWA.parentNode.insertBefore(select, btnWA);
-        priceEl.innerText = "Pilih varian di bawah";
-    } else {
-        priceEl.innerText = `Rp ${p.price.toLocaleString()}`;
-    }
-
-    modal.style.display = 'block';
-    
-    btnWA.onclick = function() {
-        if (p.variants && p.variants.length > 0 && !selectedVariant) {
-            alert("Harap pilih varian terlebih dahulu!");
-            return;
-        }
-        
-        const finalName = selectedVariant ? `${p.name} [${selectedVariant.name}]` : p.name;
-        const finalPrice = selectedVariant ? selectedVariant.price : p.price;
-        
-        addToCart(finalName, p.sku, finalPrice);
-        modal.style.display = 'none';
-    };
-}
-
-// --- 5. LOGIKA KERANJANG ---
-function addToCart(name, sku, price) {
-    const existing = cart.find(item => item.name === name);
-    if(existing) {
-        existing.qty++;
-    } else {
-        cart.push({ name, sku, price, qty: 1 });
-    }
-    saveCart();
-    alert("Berhasil ditambah ke keranjang!");
-}
-
-function toggleCart(show) {
-    const modal = document.getElementById('cart-modal');
-    if(show) {
-        renderCartItems();
-        modal.style.display = 'block';
-    } else {
-        modal.style.display = 'none';
-    }
-}
-
-function renderCartItems() {
-    const container = document.getElementById('cart-items-container');
-    const totalEl = document.getElementById('cart-total-price');
-    container.innerHTML = '';
-    let total = 0;
-
-    if(cart.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#999;">Keranjang kosong</p>';
-        totalEl.innerText = 'Rp 0';
-        return;
-    }
-
-    cart.forEach((item, i) => {
-        total += item.price * item.qty;
-        const row = document.createElement('div');
-        row.className = 'cart-item';
-        row.innerHTML = `
-            <div class="cart-item-info">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-price">Rp ${item.price.toLocaleString()} x ${item.qty}</div>
-            </div>
-            <div class="cart-actions">
-                <div class="qty-control">
-                    <button class="btn-qty" onclick="changeQty(${i}, -1)">-</button>
-                    <span class="qty-display">${item.qty}</span>
-                    <button class="btn-qty" onclick="changeQty(${i}, 1)">+</button>
-                </div>
-                <button class="btn-trash" onclick="removeItem(${i})"><i class="ri-delete-bin-line"></i></button>
-            </div>
-        `;
-        container.appendChild(row);
-    });
-    totalEl.innerText = `Rp ${total.toLocaleString()}`;
-}
-
-function changeQty(index, delta) {
-    if(cart[index].qty + delta > 0) {
-        cart[index].qty += delta;
-    } else {
-        if(confirm("Hapus barang dari keranjang?")) cart.splice(index, 1);
-    }
-    saveCart();
-    renderCartItems();
-}
-
-function removeItem(index) {
-    if(confirm("Hapus barang?")) cart.splice(index, 1);
-    saveCart();
-    renderCartItems();
-}
-
-// --- 6. API WILAYAH & CHECKOUT ---
-const apiBase = 'https://www.emsifa.com/api-wilayah-indonesia/api';
-
-async function loadProvinsi() {
-    const resp = await fetch(`${apiBase}/provinces.json`);
-    const data = await resp.json();
-    let opt = '<option value="">Pilih Provinsi...</option>';
-    data.forEach(p => opt += `<option value="${p.id}">${p.name}</option>`);
-    document.getElementById('cart-prov').innerHTML = opt;
-}
-
-async function loadKota(provId) {
-    const citySelect = document.getElementById('cart-city');
-    citySelect.disabled = true;
-    const resp = await fetch(`${apiBase}/regencies/${provId}.json`);
-    const data = await resp.json();
-    let opt = '<option value="">Pilih Kota/Kab...</option>';
-    data.forEach(c => opt += `<option value="${c.id}">${c.name}</option>`);
-    citySelect.innerHTML = opt;
-    citySelect.disabled = false;
-    citySelect.style.background = "#fff";
-}
-
-async function loadKecamatan(cityId) {
-    const distSelect = document.getElementById('cart-dist');
-    distSelect.disabled = true;
-    const resp = await fetch(`${apiBase}/districts/${cityId}.json`);
-    const data = await resp.json();
-    let opt = '<option value="">Pilih Kecamatan...</option>';
-    data.forEach(d => opt += `<option value="${d.id}">${d.name}</option>`);
-    distSelect.innerHTML = opt;
-    distSelect.disabled = false;
-    distSelect.style.background = "#fff";
-}
-
-async function checkoutWhatsApp() {
-    if (cart.length === 0) return alert("Keranjang kosong!");
-
-    const name = document.getElementById('c-name').value;
-    const phone = document.getElementById('c-phone').value;
-    const addressInput = document.getElementById('c-address').value;
-    
-    // Ambil teks wilayah
-    const provSelect = document.getElementById('c-prov');
-    const citySelect = document.getElementById('c-city');
-    const distSelect = document.getElementById('c-dist');
-    
-    const provName = provSelect.options[provSelect.selectedIndex]?.text || '';
-    const cityName = citySelect.options[citySelect.selectedIndex]?.text || '';
-    const distName = distSelect.options[distSelect.selectedIndex]?.text || '';
-
-    if (!name || !phone || !addressInput || provSelect.value === "") {
-        return alert("Mohon lengkapi data pengiriman!");
-    }
-
-    const fullAddress = `${addressInput}, ${distName}, ${cityName}, ${provName}`;
-    const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    const referral = sessionStorage.getItem('referral_code') || '-';
-
-    // Ubah tombol jadi loading agar user tidak klik 2x
-    const btn = document.querySelector('#cart-view .btn-wa');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "Memproses Pesanan...";
-    btn.disabled = true;
-
-    try {
-        // 1. SIMPAN KE DATABASE SUPABASE
-        const { error } = await db.from('orders').insert([{
-            customer_name: name,
-            customer_phone: phone,
-            shipping_address: fullAddress,
-            total_amount: total,
-            order_items: cart, // Simpan seluruh array keranjang sebagai JSON
-            referral_code: referral,
-            status: 'pending'
-        }]);
-
-        if (error) {
-            console.error("Gagal simpan database:", error);
-            // Tetap lanjut ke WA meskipun gagal simpan DB (opsional)
-        }
-
-        // 2. KIRIM KE WHATSAPP
-        let itemsText = cart.map(i => 
-            `- ${i.name} ${i.variantName ? '('+i.variantName+')' : ''} x${i.qty} = Rp ${(i.price * i.qty).toLocaleString()}`
-        ).join('\n');
-
-        let msg = `*ORDER BARU TOKONEMBAHMO*\n\n` +
-                  `👤 Nama: ${name}\n` +
-                  `📱 WA: ${phone}\n` +
-                  `📍 Alamat: ${fullAddress}\n\n` +
-                  `🛒 *PESANAN:*\n${itemsText}\n\n` +
-                  `💰 *TOTAL: Rp ${total.toLocaleString()}*\n` +
-                  `------------------------\n` +
-                  `🎫 Kode Mitra: ${referral}\n` +
-                  `------------------------\n` +
-                  `Mohon info ongkirnya kak! Data pesanan juga sudah masuk ke sistem.`;
-
-        window.open(`https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`, '_blank');
-        
-        // Reset Keranjang setelah sukses
-        cart = [];
-        updateCartBadge();
-        renderCart();
-        document.getElementById('c-name').value = '';
-        document.getElementById('c-phone').value = '';
-        document.getElementById('c-address').value = '';
-
-    } catch (err) {
-        alert("Terjadi kesalahan sistem. Silakan coba lagi.");
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-}
-
-// --- 7. NAVIGASI TAB ---
-function switchTab(tab) {
-    const home = document.getElementById('home-view');
-    const mitra = document.getElementById('mitra-view');
-    const navItems = document.querySelectorAll('.nav-item');
-    
-    navItems.forEach(i => i.classList.remove('active'));
-
-    if(tab === 'home') {
-        home.style.display = 'block';
-        mitra.style.display = 'none';
-        navItems[0].classList.add('active');
-    } else if(tab === 'mitra') {
-        home.style.display = 'none';
-        mitra.style.display = 'block';
-        navItems[3].classList.add('active');
-    }
-}
-
-// --- 8. GLOBAL EVENT & INIT ---
+// ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Cek Referral Code
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ref')) {
+        sessionStorage.setItem('referral_code', params.get('ref'));
+    }
+
+    // 2. Load Data
     fetchProducts();
-    updateCartBadge();
-    loadProvinsi();
-    
-    // Close modal jika klik tanda silang
-    document.querySelectorAll('.close-btn').forEach(btn => {
-        btn.onclick = () => btn.closest('.modal').style.display = 'none';
-    });
-    
-    // Close modal jika klik di luar area modal
-    window.onclick = (e) => {
-        if(e.target.className === 'modal') e.target.style.display = 'none';
-    };
+    loadProvinces();
 });
 
-function cariProduk(keyword) {
-    const filtered = allProducts.filter(p => p.name.toLowerCase().includes(keyword.toLowerCase()));
-    renderProducts(filtered);
+// ================= TAB NAVIGATION =================
+window.switchTab = function(tab) {
+    document.getElementById('store-view').style.display = 'none';
+    document.getElementById('cart-view').style.display = 'none';
+    document.getElementById('mitra-view').style.display = 'none';
+    
+    document.querySelectorAll('.b-nav-item').forEach(b => b.classList.remove('active'));
 
-}
+    if(tab === 'store') {
+        document.getElementById('store-view').style.display = 'block';
+        document.getElementById('nav-store').classList.add('active');
+    } else if(tab === 'cart') {
+        document.getElementById('cart-view').style.display = 'block';
+        document.getElementById('nav-cart').classList.add('active');
+        renderCart();
+    } else {
+        document.getElementById('mitra-view').style.display = 'block';
+        document.getElementById('nav-mitra').classList.add('active');
+    }
+};
 
-async function daftarMitra(event) {
-    event.preventDefault();
-
-    // Mengambil data dari elemen input HTML
-    const nama = document.getElementById('m-nama').value;
-    const hp = document.getElementById('m-hp').value;
-    const bank = document.getElementById('m-bank').value;
-    const tiktok = document.getElementById('m-tiktok').value;
-    const code = document.getElementById('m-code').value;
-    // Karena di form tidak ada input alamat, kita isi default dulu atau ambil dari input jika ada
-    const alamat = "-"; 
-
-    const btn = event.target.querySelector('button');
-    btn.innerText = "Sedang Mendaftar...";
-    btn.disabled = true;
-
-    try {
-        // SIMPAN KE TABEL affiliates
-        const { error } = await db
-            .from('affiliates')
-            .insert([
-                { 
-                    full_name: nama, 
-                    phone_number: hp, 
-                    address: alamat,
-                    bank_account: bank, 
-                    tiktok_account: tiktok, 
-                    referral_code: code,
-                    approved: false // Default sesuai gambar Anda
-                }
-            ]);
-
-        if (error) throw error;
-
-        // Buka WhatsApp untuk notifikasi ke Admin
-        const pesan = `*PENDAFTARAN MITRA BARU*\n\nNama: ${nama}\nWA: ${hp}\nTikTok: ${tiktok}\nRequest Kode: ${code}\n\nData sudah tersimpan di database.`;
-        window.open(`https://wa.me/${noAdmin}?text=${encodeURIComponent(pesan)}`, '_blank');
-
-        alert("Pendaftaran Berhasil Tersimpan!");
-        document.getElementById('form-mitra').reset();
-
-    } catch (error) {
-        alert("Gagal daftar: " + error.message);
-    } finally {
-        btn.innerText = "Kirim Pendaftaran via WA";
-        btn.disabled = false;
+// ================= PRODUCT & STORE =================
+async function fetchProducts() {
+    const { data, error } = await db.from('products').select('*').eq('is_active', true).order('name');
+    if(data) {
+        products = data;
+        renderProducts(data);
     }
 }
 
-// Panggil fungsi ini saat halaman admin dimuat (di dalam DOMContentLoaded)
-async function fetchAffiliates() {
-    const list = document.getElementById('affiliate-list-admin');
-    if (!list) return;
+function renderProducts(list) {
+    const container = document.getElementById('product-list');
+    container.innerHTML = list.map(p => `
+        <div class="product-card" onclick="addToCart('${p.id}')">
+            <div class="img-wrapper">
+                <img src="${p.image_url || 'https://via.placeholder.com/150'}" alt="${p.name}">
+            </div>
+            <div class="card-info">
+                <div class="p-name">${p.name}</div>
+                <div class="p-price">Rp ${p.price.toLocaleString()}</div>
+                <button class="btn-add">+ Keranjang</button>
+            </div>
+        </div>
+    `).join('');
+}
 
-    const { data, error } = await db
-        .from('affiliates')
-        .select('*')
-        .order('created_at', { ascending: false });
+function searchProduct() {
+    const key = document.getElementById('search-input').value.toLowerCase();
+    const filtered = products.filter(p => p.name.toLowerCase().includes(key));
+    renderProducts(filtered);
+}
 
-    if (error) {
-        console.error("Gagal ambil data mitra:", error.message);
+// ================= CART SYSTEM =================
+window.addToCart = function(id) {
+    const product = products.find(p => p.id === id);
+    const exist = cart.find(c => c.id === id);
+    if(exist) exist.qty++;
+    else cart.push({...product, qty: 1});
+    
+    updateBadge();
+    alert("Masuk keranjang!");
+};
+
+function updateBadge() {
+    const count = cart.reduce((a,b) => a + b.qty, 0);
+    const badge = document.getElementById('cart-badge');
+    badge.innerText = count;
+    badge.style.display = count > 0 ? 'block' : 'none';
+}
+
+function renderCart() {
+    const container = document.getElementById('cart-items');
+    let total = 0;
+    
+    if(cart.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:#888;'>Keranjang Kosong</p>";
+        document.getElementById('cart-total').innerText = "Rp 0";
         return;
     }
 
-    list.innerHTML = '';
-    data.forEach(m => {
-        const row = document.createElement('tr');
-        row.style.borderBottom = "1px solid #eee";
-        
-        row.innerHTML = `
-            <td style="padding: 12px;"><b>${m.full_name}</b><br><small>${m.tiktok_account}</small></td>
-            <td style="padding: 12px;">${m.phone_number}</td>
-            <td style="padding: 12px;"><code style="background:#e0f2f1; color:#00796b; padding:2px 5px; border-radius:4px;">${m.referral_code}</code></td>
-            <td style="padding: 12px;">
-                ${m.approved ? 
-                    '<span style="color: #42b549; font-weight: bold;">Aktif</span>' : 
-                    '<span style="color: #f44336;">Menunggu</span>'}
-            </td>
-            <td style="padding: 12px;">
-                ${!m.approved ? 
-                    `<button onclick="approveAffiliate('${m.id}')" style="background:#42b549; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">Setujui</button>` : 
-                    `<button disabled style="background:#ccc; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:11px;">Approved</button>`}
-            </td>
-        `;
-        list.appendChild(row);
-    });
+    container.innerHTML = cart.map((item, idx) => {
+        total += item.price * item.qty;
+        return `
+        <div style="display:flex; gap:10px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+            <img src="${item.image_url}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;">
+            <div style="flex:1;">
+                <div style="font-weight:bold; font-size:13px;">${item.name}</div>
+                <div style="color:green;">Rp ${item.price.toLocaleString()}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <button onclick="changeQty(${idx}, -1)" style="padding:2px 8px;">-</button>
+                <span>${item.qty}</span>
+                <button onclick="changeQty(${idx}, 1)" style="padding:2px 8px;">+</button>
+            </div>
+        </div>`;
+    }).join('');
+    
+    document.getElementById('cart-total').innerText = "Rp " + total.toLocaleString();
 }
 
-// Fungsi untuk mengubah status approved dari false menjadi true
-async function approveAffiliate(id) {
-    if (!confirm("Setujui mitra ini?")) return;
+window.changeQty = function(idx, delta) {
+    cart[idx].qty += delta;
+    if(cart[idx].qty <= 0) cart.splice(idx, 1);
+    renderCart();
+    updateBadge();
+};
 
-    const { error } = await db
-        .from('affiliates')
-        .update({ approved: true })
-        .eq('id', id);
+window.checkoutWhatsApp = async function() {
+    if(cart.length === 0) return alert("Keranjang kosong!");
+    
+    const name = document.getElementById('c-name').value;
+    const phone = document.getElementById('c-phone').value;
+    const addr = document.getElementById('c-addr').value;
+    const prov = document.getElementById('c-prov').selectedOptions[0]?.text;
+    const city = document.getElementById('c-city').selectedOptions[0]?.text;
+    const dist = document.getElementById('c-dist').selectedOptions[0]?.text;
 
-    if (error) {
-        alert("Gagal menyetujui: " + error.message);
-    } else {
-        alert("Mitra berhasil disetujui!");
-        fetchAffiliates(); // Refresh daftar
-    }
-}
+    if(!name || !phone || !addr) return alert("Lengkapi data pengiriman!");
 
-// --- LOGIKA TAB MITRA ---
-function showMitraTab(tab) {
-    const btnDaftar = document.getElementById('btn-tab-daftar');
-    const btnCek = document.getElementById('btn-tab-cek');
-    const pDaftar = document.getElementById('panel-daftar');
-    const pCek = document.getElementById('panel-cek');
-
-    if (tab === 'daftar') {
-        btnDaftar.style.background = "#42b549";
-        btnCek.style.background = "#ccc";
-        pDaftar.style.display = "block";
-        pCek.style.display = "none";
-    } else {
-        btnDaftar.style.background = "#ccc";
-        btnCek.style.background = "#42b549";
-        pDaftar.style.display = "none";
-        pCek.style.display = "block";
-    }
-}
-
-// --- LOGIKA CEK STATUS / LOGIN MITRA ---
-async function cekStatusMitra() {
-    const hp = document.getElementById('cek-hp').value;
-    const msg = document.getElementById('mitra-status-msg');
-    const dash = document.getElementById('mitra-dashboard');
-    const btn = document.querySelector('#mitra-login-form button');
-
-    if (!hp) return alert("Masukkan nomor WA!");
-
-    // Reset Tampilan
-    msg.innerText = "";
-    dash.style.display = "none";
-    btn.innerText = "Mengecek Database...";
+    const btn = document.querySelector('#cart-view .btn-wa');
+    btn.innerHTML = "Memproses...";
     btn.disabled = true;
 
-    try {
-        // Cari data di Supabase berdasarkan No HP
-        const { data, error } = await db
-            .from('affiliates')
-            .select('*')
-            .eq('phone_number', hp) // Pastikan kolom ini sesuai database Anda
-            .single(); // Ambil satu data saja
+    // Simpan ke Supabase Order
+    const total = cart.reduce((a,b) => a + (b.price * b.qty), 0);
+    const ref = sessionStorage.getItem('referral_code') || '-';
+    const fullAddr = `${addr}, ${dist}, ${city}, ${prov}`;
 
-        if (error || !data) {
-            msg.innerText = "Nomor tidak ditemukan. Silakan daftar dulu.";
-            msg.style.color = "red";
-        } else if (data.approved === false) {
-            msg.innerText = "Pendaftaran Anda masih MENUNGGU persetujuan Admin.";
-            msg.style.color = "#ff9800"; // Warna oranye
-        } else {
-            // JIKA SUKSES & APPROVED
-            msg.innerText = "";
-            document.getElementById('mitra-login-form').style.display = 'none'; // Sembunyikan form login
-            dash.style.display = 'block'; // Munculkan dashboard
-            
-            // Isi Data Dashboard
-            document.getElementById('dash-nama').innerText = data.full_name;
-            document.getElementById('dash-code').innerText = data.referral_code;
-            
-            // Generate Link Otomatis
-            const link = `https://tokonembahmo.netlify.app/?ref=${data.referral_code}`;
-            document.getElementById('dash-link').value = link;
-        }
+    await db.from('orders').insert([{
+        customer_name: name, customer_phone: phone, shipping_address: fullAddr,
+        total_amount: total, order_items: cart, referral_code: ref
+    }]);
 
-    } catch (err) {
-        console.error(err);
-        msg.innerText = "Terjadi kesalahan sistem.";
-    } finally {
-        btn.innerText = "Masuk Dashboard";
-        btn.disabled = false;
+    // Kirim WA
+    const items = cart.map(c => `- ${c.name} x${c.qty}`).join('\n');
+    const msg = `*ORDER BARU*\nNama: ${name}\nWA: ${phone}\nAlamat: ${fullAddr}\n\n*Pesanan:*\n${items}\n\n*Total: Rp ${total.toLocaleString()}*\nKode Ref: ${ref}`;
+    
+    window.open(`https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`, '_blank');
+    
+    cart = []; updateBadge(); renderCart();
+    btn.innerHTML = "Order via WhatsApp";
+    btn.disabled = false;
+};
+
+// ================= MITRA LOGIC =================
+window.showMitraTab = function(type) {
+    document.getElementById('panel-daftar').style.display = type === 'daftar' ? 'block' : 'none';
+    document.getElementById('panel-cek').style.display = type === 'cek' ? 'block' : 'none';
+    document.getElementById('mt-daftar').style.background = type === 'daftar' ? '#42b549' : '#ccc';
+    document.getElementById('mt-cek').style.background = type === 'cek' ? '#42b549' : '#ccc';
+};
+
+window.daftarMitra = async function(e) {
+    e.preventDefault();
+    const data = {
+        full_name: document.getElementById('m-nama').value,
+        phone_number: document.getElementById('m-hp').value,
+        bank_account: document.getElementById('m-bank').value,
+        tiktok_account: document.getElementById('m-tiktok').value,
+        referral_code: document.getElementById('m-code').value,
+        approved: false
+    };
+    
+    const { error } = await db.from('affiliates').insert([data]);
+    if(error) alert("Gagal: " + error.message);
+    else { alert("Berhasil! Tunggu persetujuan admin."); e.target.reset(); }
+};
+
+window.cekStatusMitra = async function() {
+    const hp = document.getElementById('cek-hp').value;
+    const { data, error } = await db.from('affiliates').select('*').eq('phone_number', hp).single();
+    const msg = document.getElementById('msg-status');
+    
+    if(error || !data) {
+        msg.innerText = "Nomor tidak ditemukan!"; msg.style.color = "red";
+    } else if (!data.approved) {
+        msg.innerText = "Akun masih MENUNGGU persetujuan."; msg.style.color = "orange";
+    } else {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('mitra-dash').style.display = 'block';
+        document.getElementById('dash-nama').innerText = data.full_name;
+        document.getElementById('dash-code').innerText = data.referral_code;
+        document.getElementById('dash-link').value = window.location.origin + "/?ref=" + data.referral_code;
     }
+};
+
+window.copyLink = function() {
+    const link = document.getElementById('dash-link');
+    link.select(); navigator.clipboard.writeText(link.value);
+    alert("Link tersalin!");
+};
+
+// ================= API WILAYAH =================
+async function loadProvinces() {
+    try {
+        const r = await fetch('https://kanglerian.github.io/api-wilayah-indonesia/api/provinces.json');
+        const d = await r.json();
+        const s = document.getElementById('c-prov');
+        s.innerHTML = '<option value="">Pilih Provinsi</option>' + d.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+        s.onchange = () => loadRegencies(s.value);
+    } catch(e) {}
 }
-
-function copyLinkMitra() {
-    const linkInput = document.getElementById('dash-link');
-    linkInput.select();
-    linkInput.setSelectionRange(0, 99999); // Untuk HP
-    navigator.clipboard.writeText(linkInput.value);
-    alert("Link berhasil disalin! Silakan sebarkan di TikTok/WA.");
+async function loadRegencies(id) {
+    const r = await fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/regencies/${id}.json`);
+    const d = await r.json();
+    const s = document.getElementById('c-city'); s.disabled=false;
+    s.innerHTML = '<option value="">Pilih Kota</option>' + d.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    s.onchange = () => loadDistricts(s.value);
 }
-// Jangan lupa panggil fetchAffiliates() di bagian inisialisasi script
-
-
-
-
+async function loadDistricts(id) {
+    const r = await fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/districts/${id}.json`);
+    const d = await r.json();
+    const s = document.getElementById('c-dist'); s.disabled=false;
+    s.innerHTML = '<option value="">Pilih Kecamatan</option>' + d.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+}
