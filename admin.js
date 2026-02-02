@@ -79,8 +79,9 @@ async function fetchAffiliates() {
 }
 
 // Fungsi untuk menyetujui mitra (Update status approved ke true)
+// Versi Otomatis: Cukup Update Database, Tidak Perlu Buka WA
 window.approveAffiliate = async (id) => {
-    if (!confirm("Apakah Anda yakin ingin menyetujui mitra ini?")) return;
+    if (!confirm("Setujui mitra ini? Status akan berubah jadi AKTIF di Dashboard mereka.")) return;
 
     const { error } = await db
         .from('affiliates')
@@ -88,10 +89,11 @@ window.approveAffiliate = async (id) => {
         .eq('id', id);
 
     if (error) {
-        alert("Gagal menyetujui: " + error.message);
+        alert("Gagal: " + error.message);
     } else {
-        alert("Mitra telah disetujui dan diaktifkan!");
-        fetchAffiliates(); // Refresh daftar mitra
+        // Hapus notifikasi WA, cukup refresh tabel saja
+        alert("Berhasil! Mitra sekarang bisa melihat kode referral mereka di menu Dashboard Mitra.");
+        fetchAffiliates(); 
     }
 };
 
@@ -261,3 +263,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
     fetchAffiliates(); // Memuat daftar mitra saat admin dibuka
 });
+
