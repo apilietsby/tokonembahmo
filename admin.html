@@ -8,8 +8,14 @@
     
     <style>
         /* 1. Reset & Layout Dasar */
+        :root {
+            --primary-color: #42b549; /* Hijau Tokopedia Style */
+            --primary-dark: #35963b;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
         body {
-            font-family: sans-serif; /* Pakai font standar biar ringan */
+            font-family: 'Poppins', sans-serif;
             background-color: #f4f6f8;
             padding: 20px;
             margin: 0;
@@ -17,12 +23,12 @@
         }
 
         .admin-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
         }
 
         /* 2. Header & Tombol */
@@ -30,13 +36,15 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee;
         }
-        h2 { margin: 0; color: #d35400; }
+        h2 { margin: 0; color: var(--primary-color); }
         
         .btn {
             padding: 10px 15px; border: none; border-radius: 5px;
             cursor: pointer; font-weight: bold; font-size: 14px;
+            transition: opacity 0.2s;
         }
-        .btn-add { background: #d35400; color: white; }
+        .btn:active { opacity: 0.8; }
+        .btn-add { background: var(--primary-color); color: white; }
         .btn-cancel { background: #7f8c8d; color: white; margin-right: 10px; }
         .btn-save { background: #27ae60; color: white; }
         .btn-view-store { text-decoration: none; color: #2980b9; font-size: 14px; }
@@ -48,29 +56,41 @@
         }
         label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 13px; }
 
-        /* 4. List Produk (Tabel) */
+        /* 4. List Produk */
         .admin-item {
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px; border-bottom: 1px solid #eee;
             background: #fff;
         }
-        .admin-item:hover { background-color: #f9f9f9; }
-
-        /* === PERBAIKAN UTAMA DI SINI === */
-        /* Kita paksa semua gambar di dalam .admin-item jadi kecil */
         .admin-item img {
-            width: 60px !important;  /* Lebar Paksa */
-            height: 60px !important; /* Tinggi Paksa */
-            object-fit: cover;       /* Agar gambar tidak gepeng */
+            width: 60px !important;
+            height: 60px !important;
+            object-ratio: 1 / 1;
+            object-fit: cover;
             border-radius: 4px;
             margin-right: 15px;
             border: 1px solid #ddd;
-            display: block;
         }
-
         .item-info { flex-grow: 1; }
+
+        /* 5. Tabel Affiliate (Penambahan Baru) */
+        .admin-section { margin-top: 40px; }
+        .table-responsive {
+            overflow-x: auto; 
+            background: white; 
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f9f9f9; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
         
-        /* 5. Preview Upload */
+        .status-badge {
+            padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;
+        }
+        .status-active { background: #e8f5e9; color: #2e7d32; }
+        .status-pending { background: #fff3e0; color: #ef6c00; }
+
         #preview-img {
             width: 100px; height: 100px; object-fit: cover;
             border: 2px dashed #ddd; display: none; margin-bottom: 10px;
@@ -85,18 +105,38 @@
             <a href="index.html" class="btn-view-store" target="_blank">Lihat Toko ↗</a>
         </div>
 
-        <input type="text" id="search-input" placeholder="Cari nama barang..." onkeyup="loadProducts()" style="margin-bottom: 20px;">
-
         <div id="view-product-list">
+            <input type="text" id="search-input" placeholder="Cari nama barang..." onkeyup="loadProducts()" style="margin-bottom: 20px;">
             <button onclick="showAddForm()" class="btn btn-add">+ Tambah Produk</button>
+            
             <div id="admin-product-list" style="margin-top: 20px;">
-                <p>Memuat data...</p>
+                <p>Memuat data produk...</p>
+            </div>
+
+            <div class="admin-section">
+                <hr style="margin: 40px 0; border: 0; border-top: 2px solid #eee;">
+                <h3 style="color: var(--primary-color); margin-bottom: 15px;">Manajemen Mitra Affiliate</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nama / TikTok</th>
+                                <th>WhatsApp</th>
+                                <th>Kode Ref</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="affiliate-list-admin">
+                            <tr><td colspan="5" style="text-align:center;">Memuat data mitra...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <div id="view-product-form" style="display: none;">
             <h3 style="margin-top: 0;">Form Produk</h3>
-            
             <form id="product-form" onsubmit="saveProduct(event)">
                 <input type="hidden" id="edit-id">
                 
@@ -123,20 +163,16 @@
 
                 <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbdefb;">
                     <h4 style="margin-top:0; color:#0d47a1;">Kelola Varian (Warna/Ukuran)</h4>
-                    
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <input type="text" id="v-name" placeholder="Nama (Contoh: Merah / XL)">
                         <input type="number" id="v-price" placeholder="Harga Varian">
                     </div>
-                    
                     <label style="font-size:11px;">Foto Varian (Opsional)</label>
                     <input type="file" id="v-image" accept="image/*">
-                    
                     <button type="button" onclick="addVariantItem()" class="btn" style="background:#2196f3; color:white; width:100%; margin-top:5px;">+ Tambah ke List Varian</button>
-
-                    <div id="variant-list-container" style="margin-top:15px; max-height: 200px; overflow-y: auto;">
-                        </div>
+                    <div id="variant-list-container" style="margin-top:15px; max-height: 200px; overflow-y: auto;"></div>
                 </div>
+
                 <label>Foto Utama Produk</label>
                 <img id="preview-img" alt="Preview">
                 <input type="file" id="p-image" accept="image/*" onchange="previewImage(event)">
@@ -151,5 +187,13 @@
     </div>
 
     <script src="admin.js"></script>
+    <script>
+        // Memastikan daftar affiliate dimuat saat halaman dibuka
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof fetchAffiliates === "function") {
+                fetchAffiliates();
+            }
+        });
+    </script>
 </body>
 </html>
