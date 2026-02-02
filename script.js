@@ -261,37 +261,85 @@ async function loadKecamatan(cityId) {
     distSelect.style.background = "#fff";
 }
 
-function checkoutWhatsApp() {
-    if(cart.length === 0) return alert("Keranjang kosong!");
-    
-    const nama = document.getElementById('cart-name').value;
-    const hp = document.getElementById('cart-phone').value;
-    const prov = document.getElementById('cart-prov');
-    const kota = document.getElementById('cart-city');
-    const kec = document.getElementById('cart-dist');
-    const alamat = document.getElementById('cart-address').value;
+async function checkoutWhatsApp() {
+    if (cart.length === 0) return alert("Keranjang kosong!");
 
-    if(!nama || !hp || !prov.value || !kota.value || !kec.value || !alamat) {
+    const name = document.getElementById('c-name').value;
+    const phone = document.getElementById('c-phone').value;
+    const addressInput = document.getElementById('c-address').value;
+    
+    // Ambil teks wilayah
+    const provSelect = document.getElementById('c-prov');
+    const citySelect = document.getElementById('c-city');
+    const distSelect = document.getElementById('c-dist');
+    
+    const provName = provSelect.options[provSelect.selectedIndex]?.text || '';
+    const cityName = citySelect.options[citySelect.selectedIndex]?.text || '';
+    const distName = distSelect.options[distSelect.selectedIndex]?.text || '';
+
+    if (!name || !phone || !addressInput || provSelect.value === "") {
         return alert("Mohon lengkapi data pengiriman!");
     }
 
-    let listProduk = "";
-    let totalHarga = 0;
-    cart.forEach((item, i) => {
-        listProduk += `${i+1}. ${item.name} (${item.qty}x) - Rp ${(item.price * item.qty).toLocaleString()}\n`;
-        totalHarga += item.price * item.qty;
-    });
+    const fullAddress = `${addressInput}, ${distName}, ${cityName}, ${provName}`;
+    const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const referral = sessionStorage.getItem('referral_code') || '-';
 
-    const teks = `*ORDER BARU - TOKONEMBAHMO*\n\n` +
-                 `*Daftar Belanja:*\n${listProduk}\n` +
-                 `*Total Harga: Rp ${totalHarga.toLocaleString()}*\n` +
-                 `_(Belum termasuk ongkir)_\n\n` +
-                 `*Data Penerima:*\n` +
-                 `Nama: ${nama}\n` +
-                 `WhatsApp: ${hp}\n` +
-                 `Alamat: ${alamat}, ${kec.options[kec.selectedIndex].text}, ${kota.options[kota.selectedIndex].text}, ${prov.options[prov.selectedIndex].text}`;
+    // Ubah tombol jadi loading agar user tidak klik 2x
+    const btn = document.querySelector('#cart-view .btn-wa');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "Memproses Pesanan...";
+    btn.disabled = true;
 
-    window.open(`https://wa.me/${noAdmin}?text=${encodeURIComponent(teks)}`, '_blank');
+    try {
+        // 1. SIMPAN KE DATABASE SUPABASE
+        const { error } = await db.from('orders').insert([{
+            customer_name: name,
+            customer_phone: phone,
+            shipping_address: fullAddress,
+            total_amount: total,
+            order_items: cart, // Simpan seluruh array keranjang sebagai JSON
+            referral_code: referral,
+            status: 'pending'
+        }]);
+
+        if (error) {
+            console.error("Gagal simpan database:", error);
+            // Tetap lanjut ke WA meskipun gagal simpan DB (opsional)
+        }
+
+        // 2. KIRIM KE WHATSAPP
+        let itemsText = cart.map(i => 
+            `- ${i.name} ${i.variantName ? '('+i.variantName+')' : ''} x${i.qty} = Rp ${(i.price * i.qty).toLocaleString()}`
+        ).join('\n');
+
+        let msg = `*ORDER BARU TOKONEMBAHMO*\n\n` +
+                  `👤 Nama: ${name}\n` +
+                  `📱 WA: ${phone}\n` +
+                  `📍 Alamat: ${fullAddress}\n\n` +
+                  `🛒 *PESANAN:*\n${itemsText}\n\n` +
+                  `💰 *TOTAL: Rp ${total.toLocaleString()}*\n` +
+                  `------------------------\n` +
+                  `🎫 Kode Mitra: ${referral}\n` +
+                  `------------------------\n` +
+                  `Mohon info ongkirnya kak! Data pesanan juga sudah masuk ke sistem.`;
+
+        window.open(`https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`, '_blank');
+        
+        // Reset Keranjang setelah sukses
+        cart = [];
+        updateCartBadge();
+        renderCart();
+        document.getElementById('c-name').value = '';
+        document.getElementById('c-phone').value = '';
+        document.getElementById('c-address').value = '';
+
+    } catch (err) {
+        alert("Terjadi kesalahan sistem. Silakan coba lagi.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }
 
 // --- 7. NAVIGASI TAB ---
@@ -522,6 +570,7 @@ function copyLinkMitra() {
     alert("Link berhasil disalin! Silakan sebarkan di TikTok/WA.");
 }
 // Jangan lupa panggil fetchAffiliates() di bagian inisialisasi script
+
 
 
 
