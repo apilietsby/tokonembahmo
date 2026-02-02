@@ -8,7 +8,9 @@ const db = supabase.createClient(supabaseUrl, supabaseKey);
 let fileToUpload = null;
 let tempVariants = []; 
 
-// 2. FUNGSI NAVIGASI
+// ==========================================
+// 1. FUNGSI NAVIGASI & UI
+// ==========================================
 function showAddForm() {
     document.getElementById('view-product-list').style.display = 'none';
     document.getElementById('view-product-form').style.display = 'block';
@@ -24,7 +26,78 @@ function cancelForm() {
     document.getElementById('view-product-form').style.display = 'none';
 }
 
-// 3. LOGIKA PREVIEW & VARIAN
+// ==========================================
+// 2. LOGIKA MANAJEMEN MITRA (AFFILIATE)
+// ==========================================
+
+// Fungsi untuk mengambil data mitra dari Supabase
+async function fetchAffiliates() {
+    const list = document.getElementById('affiliate-list-admin');
+    if (!list) return;
+
+    // Mengambil data dari tabel 'affiliates'
+    const { data, error } = await db
+        .from('affiliates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Gagal ambil data mitra:", error.message);
+        list.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal memuat data</td></tr>`;
+        return;
+    }
+
+    if (data.length === 0) {
+        list.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada pendaftar mitra</td></tr>`;
+        return;
+    }
+
+    list.innerHTML = data.map(m => `
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 12px;">
+                <b>${m.full_name}</b><br>
+                <small style="color:#666;">@${m.tiktok_account || '-'}</small>
+            </td>
+            <td style="padding: 12px;">${m.phone_number}</td>
+            <td style="padding: 12px;">
+                <code style="background:#e0f2f1; color:#00796b; padding:2px 5px; border-radius:4px; font-weight:bold;">
+                    ${m.referral_code}
+                </code>
+            </td>
+            <td style="padding: 12px;">
+                ${m.approved ? 
+                    '<span class="status-badge status-active">Aktif</span>' : 
+                    '<span class="status-badge status-pending">Menunggu</span>'}
+            </td>
+            <td style="padding: 12px;">
+                ${!m.approved ? 
+                    `<button onclick="approveAffiliate('${m.id}')" style="background:#42b549; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">Setujui</button>` : 
+                    `<button disabled style="background:#ccc; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:11px;">Approved</button>`}
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Fungsi untuk menyetujui mitra (Update status approved ke true)
+window.approveAffiliate = async (id) => {
+    if (!confirm("Apakah Anda yakin ingin menyetujui mitra ini?")) return;
+
+    const { error } = await db
+        .from('affiliates')
+        .update({ approved: true })
+        .eq('id', id);
+
+    if (error) {
+        alert("Gagal menyetujui: " + error.message);
+    } else {
+        alert("Mitra telah disetujui dan diaktifkan!");
+        fetchAffiliates(); // Refresh daftar mitra
+    }
+};
+
+// ==========================================
+// 3. LOGIKA PRODUK & VARIAN (SUDAH ADA)
+// ==========================================
 function previewImage(event) {
     const file = event.target.files[0];
     if (file) {
@@ -39,7 +112,7 @@ function previewImage(event) {
     }
 }
 
-async function addVariantItem() {
+window.addVariantItem = async () => {
     const vName = document.getElementById('v-name').value;
     const vPrice = document.getElementById('v-price').value;
     const vFile = document.getElementById('v-image').files[0];
@@ -62,7 +135,6 @@ async function addVariantItem() {
 
     tempVariants.push({ name: vName, price: parseInt(vPrice), image: vImageUrl });
     
-    // Reset input varian
     document.getElementById('v-name').value = '';
     document.getElementById('v-price').value = '';
     document.getElementById('v-image').value = '';
@@ -85,18 +157,17 @@ function renderVariantList() {
     `).join('');
 }
 
-function removeVariant(index) {
+window.removeVariant = (index) => {
     tempVariants.splice(index, 1);
     renderVariantList();
 }
 
-// 4. LOAD & SAVE PRODUK
 async function loadProducts() {
     const container = document.getElementById('admin-product-list');
     container.innerHTML = "Memuat...";
     
     const search = document.getElementById('search-input').value;
-    let query = db.from('products').select('*').order('created_at', { ascending: false });
+    let query = db.from('products').select('*').order('name', { ascending: true }); // Diurutkan berdasarkan nama agar klaster rapi
     if(search) query = query.ilike('name', `%${search}%`);
 
     const { data, error } = await query;
@@ -183,4 +254,10 @@ window.deleteProduct = async (id) => {
     }
 };
 
-loadProducts();
+// ==========================================
+// 4. INISIALISASI SAAT HALAMAN DIMUAT
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    loadProducts();
+    fetchAffiliates(); // Memuat daftar mitra saat admin dibuka
+});
