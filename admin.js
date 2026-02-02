@@ -11,7 +11,6 @@ const db = supabase.createClient(supabaseUrl, supabaseKey);
 // BAGIAN 1: FITUR LOGIN
 // ==========================================
 
-// PASSWORD ADMIN
 const ADMIN_PASS = "admin123"; 
 
 function checkLogin() {
@@ -22,7 +21,7 @@ function checkLogin() {
         if(overlay) overlay.style.display = 'none';
         loadProducts(); 
     } else {
-        alert("Password Salah! Silakan coba lagi.");
+        alert("Password Salah!");
     }
 }
 
@@ -117,7 +116,7 @@ function renderVariantList() {
     const container = document.getElementById('variant-list-container');
     if(!container) return;
 
-    // PERBAIKAN: Menggunakan placehold.co agar tidak error
+    // PERHATIKAN: DI SINI MENGGUNAKAN BACKTICK (`) BUKAN PETIK (' atau ")
     container.innerHTML = tempVariants.map((v, i) => `
         <div class="admin-item" style="margin-bottom:5px; background:#f9f9f9; padding:10px;">
             <img src="${v.image || 'https://placehold.co/50'}" style="width:40px; height:40px; object-fit:cover;">
@@ -152,7 +151,7 @@ async function loadProducts() {
     if (error || !data) return container.innerHTML = "Gagal memuat data.";
     if (data.length === 0) return container.innerHTML = "Tidak ada produk.";
 
-    // PERBAIKAN: Menggunakan placehold.co agar tidak error
+    // PERHATIKAN: DI SINI MENGGUNAKAN BACKTICK (`) JUGA
     container.innerHTML = data.map(p => `
         <div class="admin-item">
             <img src="${p.image_url || 'https://placehold.co/60'}" onerror="this.src='https://placehold.co/60'">
