@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Tokonembahmo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* 1. Reset & Layout Dasar */
+        body {
+            font-family: sans-serif; /* Pakai font standar biar ringan */
+            background-color: #f4f6f8;
+            padding: 20px;
+            margin: 0;
+            color: #333;
+        }
+
+        .admin-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* 2. Header & Tombol */
+        .admin-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee;
+        }
+        h2 { margin: 0; color: #d35400; }
+        
+        .btn {
+            padding: 10px 15px; border: none; border-radius: 5px;
+            cursor: pointer; font-weight: bold; font-size: 14px;
+        }
+        .btn-add { background: #d35400; color: white; }
+        .btn-cancel { background: #7f8c8d; color: white; margin-right: 10px; }
+        .btn-save { background: #27ae60; color: white; }
+        .btn-view-store { text-decoration: none; color: #2980b9; font-size: 14px; }
+
+        /* 3. Input Form */
+        input, textarea, select {
+            width: 100%; padding: 10px; margin-bottom: 15px;
+            border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+        }
+        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 13px; }
+
+        /* 4. List Produk (Tabel) */
+        .admin-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; border-bottom: 1px solid #eee;
+            background: #fff;
+        }
+        .admin-item:hover { background-color: #f9f9f9; }
+
+        /* === PERBAIKAN UTAMA DI SINI === */
+        /* Kita paksa semua gambar di dalam .admin-item jadi kecil */
+        .admin-item img {
+            width: 60px !important;  /* Lebar Paksa */
+            height: 60px !important; /* Tinggi Paksa */
+            object-fit: cover;       /* Agar gambar tidak gepeng */
+            border-radius: 4px;
+            margin-right: 15px;
+            border: 1px solid #ddd;
+            display: block;
+        }
+
+        .item-info { flex-grow: 1; }
+        
+        /* 5. Preview Upload */
+        #preview-img {
+            width: 100px; height: 100px; object-fit: cover;
+            border: 2px dashed #ddd; display: none; margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h2>Admin Panel</h2>
+            <a href="index.html" class="btn-view-store" target="_blank">Lihat Toko ↗</a>
+        </div>
+
+        <input type="text" id="search-input" placeholder="Cari nama barang..." onkeyup="loadProducts()" style="margin-bottom: 20px;">
+
+        <div id="view-product-list">
+            <button onclick="showAddForm()" class="btn btn-add">+ Tambah Produk</button>
+            <div id="admin-product-list" style="margin-top: 20px;">
+                <p>Memuat data...</p>
+            </div>
+        </div>
+
+        <div id="view-product-form" style="display: none;">
+            <h3 style="margin-top: 0;">Form Produk</h3>
+            
+            <form id="product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="edit-id">
+                
+                <label>Nama Produk</label>
+                <input type="text" id="p-name" required>
+
+                <label>Kode SKU</label>
+                <input type="text" id="p-sku" required>
+
+                <label>Harga Dasar (Rp)</label>
+                <input type="number" id="p-price" required>
+
+                <label>Deskripsi</label>
+                <textarea id="p-desc" rows="3"></textarea>
+
+                <label>Link TikTok (Opsional)</label>
+                <input type="text" id="p-tiktok" placeholder="https://...">
+
+                <label>Status Produk</label>
+                <select id="p-status" style="margin-bottom: 20px;">
+                    <option value="true">Aktif</option>
+                    <option value="false">Arsip</option>
+                </select>
+
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbdefb;">
+                    <h4 style="margin-top:0; color:#0d47a1;">Kelola Varian (Warna/Ukuran)</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="text" id="v-name" placeholder="Nama (Contoh: Merah / XL)">
+                        <input type="number" id="v-price" placeholder="Harga Varian">
+                    </div>
+                    
+                    <label style="font-size:11px;">Foto Varian (Opsional)</label>
+                    <input type="file" id="v-image" accept="image/*">
+                    
+                    <button type="button" onclick="addVariantItem()" class="btn" style="background:#2196f3; color:white; width:100%; margin-top:5px;">+ Tambah ke List Varian</button>
+
+                    <div id="variant-list-container" style="margin-top:15px; max-height: 200px; overflow-y: auto;">
+                        </div>
+                </div>
+                <label>Foto Utama Produk</label>
+                <img id="preview-img" alt="Preview">
+                <input type="file" id="p-image" accept="image/*" onchange="previewImage(event)">
+                <div id="upload-placeholder" style="font-size:12px; color:#888; margin-bottom:10px;">*Foto utama wajib ada</div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button type="button" onclick="cancelForm()" class="btn btn-cancel">Batal</button>
+                    <button type="submit" id="btn-save" class="btn btn-save">Simpan Produk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

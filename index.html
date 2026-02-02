@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOKONEMBAHMO - Toko Serba Ada</title>
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <header>
+        <div class="search-container">
+            <i class="ri-search-line search-icon-inside"></i>
+            <input type="text" id="search-input" class="search-input" placeholder="Cari di Tokonembahmo..." onkeyup="cariProduk(this.value)">
+        </div>
+        
+        <div class="header-icons">
+            <a href="#" class="header-icon" onclick="toggleCart(true)">
+                <i class="ri-shopping-cart-2-line"></i>
+                <span class="badge" id="cart-badge">0</span>
+            </a>
+            <a href="#" class="header-icon">
+                <i class="ri-message-3-line"></i>
+            </a>
+        </div>
+    </header>
+
+    <a href="https://wa.me/6281234567890" target="_blank" class="fab-wa">
+        <i class="ri-whatsapp-line"></i>
+    </a>
+
+    <main id="home-view">
+        
+        <div class="hero-banner">
+            <img src="https://placehold.co/600x250/42b549/white?text=UJI+COBA+WEMSET" alt="Banner Promo">
+        </div>
+
+        <div style="padding: 15px 10px 5px 10px; font-weight: bold; font-size: 14px; color: #42b549;">
+            Rekomendasi Untukmu
+        </div>
+
+        <div id="product-list" class="product-grid">
+            <p style="text-align:center; width:200%; padding:20px; color:#999;">Sedang memuat produk...</p>
+        </div>
+    </main>
+
+    <main id="mitra-view" style="display: none; padding: 20px;">
+        <div style="background:white; padding:20px; border-radius:8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <h2 style="color: #42b549; margin-bottom:10px;">Daftar Jadi Mitra</h2>
+            <p style="font-size:12px; color:#666; margin-bottom:15px;">Dapatkan komisi dengan menyebarkan link produk kami!</p>
+            
+            <form id="form-mitra" onsubmit="daftarMitra(event)">
+                <input type="text" id="m-nama" class="input-field" placeholder="Nama Lengkap" required>
+                <input type="number" id="m-hp" class="input-field" placeholder="No WhatsApp (08...)" required>
+                <input type="text" id="m-bank" class="input-field" placeholder="Nama Bank & No Rek" required>
+                <input type="text" id="m-tiktok" class="input-field" placeholder="Username TikTok (@abc)" required>
+                <input type="text" id="m-code" class="input-field" placeholder="Request Kode Referral (Contoh: BUDI01)" required>
+                
+                <button type="submit" class="btn-wa" style="width:100%;">Kirim Pendaftaran via WA</button>
+            </form>
+            <p id="mitra-msg" style="text-align:center; margin-top:10px; font-weight:bold;"></p>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" onclick="switchTab('home')">
+            <i class="ri-home-5-line"></i> Beranda
+        </a>
+        
+        <a href="#" class="nav-item" onclick="toggleCart(true)">
+            <i class="ri-shopping-cart-2-line"></i> Keranjang
+        </a>
+        
+        <a href="#" class="nav-item" onclick="alert('Pilih Kategori Produk')">
+            <i class="ri-layout-grid-line"></i> Kategori
+        </a>
+
+        <a href="#" class="nav-item" onclick="switchTab('mitra')">
+            <i class="ri-user-smile-line"></i> Mitra
+        </a>
+    </nav>
+
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="this.closest('.modal').style.display='none'">&times;</span>
+        
+            <img id="modal-img" src="" alt="Produk">
+            <h2 id="modal-title" style="margin-top:10px; font-size:16px;">Nama Produk</h2>
+            <p id="modal-sku" style="font-size:12px; color:#888;">SKU: -</p>
+            <p id="modal-price" style="font-size:18px; color:#42b549; font-weight:bold; margin:5px 0;">Rp 0</p>
+            
+            <div id="modal-desc" style="font-size:13px; color:#555; background:#f9f9f9; padding:10px; border-radius:5px; max-height:100px; overflow-y:auto; margin-bottom:15px;"></div>
+            
+            <button class="btn-wa">
+                <i class="ri-shopping-cart-2-line"></i> Masukkan Keranjang
+            </button>
+        </div>
+    </div>
+
+   <div id="cart-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="toggleCart(false)">&times;</span>
+            <h2 style="color: #42b549; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size:16px;">
+                <i class="ri-shopping-cart-2-line"></i> Keranjang Saya
+            </h2>
+            
+            <div id="cart-items-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+                </div>
+
+            <div style="background:#f9f9f9; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px dashed #ddd;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:16px; margin-bottom:4px;">
+                    <span>Total Barang:</span>
+                    <span id="cart-total-price" style="color:#42b549;">Rp 0</span>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #ff5722; font-style: italic;">
+                    *Total harga belum termasuk ongkir
+                </div>
+            </div>
+
+            <div style="background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <p style="font-size:12px; font-weight:bold; margin-bottom:10px; color:#333;">Data Pengiriman:</p>
+                
+                <input type="text" id="cart-name" class="input-field" placeholder="Nama Penerima">
+
+                <input type="number" id="cart-phone" class="input-field" placeholder="No. WhatsApp / HP Aktif (08...)" style="margin-bottom:10px;">
+                
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
+                    <select id="cart-prov" class="input-field" onchange="loadKota(this.value)">
+                        <option value="">Pilih Provinsi...</option>
+                    </select>
+
+                    <select id="cart-city" class="input-field" onchange="loadKecamatan(this.value)" disabled style="background:#f0f0f0;">
+                        <option value="">Pilih Kota/Kab...</option>
+                    </select>
+
+                    <select id="cart-dist" class="input-field" disabled style="background:#f0f0f0;">
+                        <option value="">Pilih Kecamatan...</option>
+                    </select>
+                </div>
+                
+                <textarea id="cart-address" class="input-field" rows="2" placeholder="Nama Jalan, No. Rumah, RT/RW, Patokan..."></textarea>
+            </div>
+
+            <div class="checkout-note">
+                <strong>⚠️ INFO PENTING</strong>
+                Kirim ke Admin, Tunggu Proses Perhitungan Ongkir dan Muncul Invoice, lalu selesaikan Proses Pembayaran.
+            </div>
+
+            <button onclick="checkoutWhatsApp()" class="btn-wa">
+                <i class="ri-whatsapp-line"></i> Checkout via WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
