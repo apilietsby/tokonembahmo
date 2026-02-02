@@ -103,18 +103,22 @@
                 <input type="text" id="p-tiktok" placeholder="https://...">
 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef;">
-                    <h4 style="margin-top:0; margin-bottom:10px; color:#555;">Varian (Warna/Ukuran)</h4>
-                    
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
-                        <input type="text" id="v-name" placeholder="Nama Varian (Cth: Merah / XL)">
-                        <input type="number" id="v-price" placeholder="Harga Varian">
-                    </div>
-                    <input type="file" id="v-image" accept="image/*">
-                    
-                    <button type="button" onclick="addVariantItem()" class="btn" style="background:#6c757d; color:white; width:100%; margin-top:5px;">+ Tambah Varian</button>
-
-                    <div id="variant-list-container" style="margin-top:10px; max-height: 200px; overflow-y: auto;"></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="margin:0; color:#555;">Varian (Opsional)</h4>
+                        <button type="button" onclick="clearVariants()" style="font-size:11px; background:none; border:none; color:red; cursor:pointer; text-decoration:underline;">Hapus Semua Varian</button>
                 </div>
+    
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                    <input type="text" id="v-name" placeholder="Nama (Cth: Merah / XL)">
+                    <input type="number" id="v-price" placeholder="Harga">
+                </div>
+    
+                <button type="button" onclick="addVariantItem()" class="btn" style="background:#6c757d; color:white; width:100%; margin-top:5px;">+ Tambah Varian</button>
+
+                <div id="variant-list-container" style="margin-top:10px; max-height: 200px; overflow-y: auto;">
+                    </div>
+                <p style="font-size:11px; color:#888; margin-top:5px;">*Jika tidak ada varian, biarkan kosong. Harga akan mengikuti harga utama di atas.</p>
+            </div>
 
                 <label>Foto Utama Produk</label>
                 <img id="preview-img" alt="Preview">
@@ -131,3 +135,4 @@
     <script src="admin.js"></script>
 </body>
 </html>
+
