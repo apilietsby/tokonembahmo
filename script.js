@@ -385,3 +385,62 @@ async function daftarMitra(event) {
     }
 }
 
+// Panggil fungsi ini saat halaman admin dimuat (di dalam DOMContentLoaded)
+async function fetchAffiliates() {
+    const list = document.getElementById('affiliate-list-admin');
+    if (!list) return;
+
+    const { data, error } = await db
+        .from('affiliates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Gagal ambil data mitra:", error.message);
+        return;
+    }
+
+    list.innerHTML = '';
+    data.forEach(m => {
+        const row = document.createElement('tr');
+        row.style.borderBottom = "1px solid #eee";
+        
+        row.innerHTML = `
+            <td style="padding: 12px;"><b>${m.full_name}</b><br><small>${m.tiktok_account}</small></td>
+            <td style="padding: 12px;">${m.phone_number}</td>
+            <td style="padding: 12px;"><code style="background:#e0f2f1; color:#00796b; padding:2px 5px; border-radius:4px;">${m.referral_code}</code></td>
+            <td style="padding: 12px;">
+                ${m.approved ? 
+                    '<span style="color: #42b549; font-weight: bold;">Aktif</span>' : 
+                    '<span style="color: #f44336;">Menunggu</span>'}
+            </td>
+            <td style="padding: 12px;">
+                ${!m.approved ? 
+                    `<button onclick="approveAffiliate('${m.id}')" style="background:#42b549; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">Setujui</button>` : 
+                    `<button disabled style="background:#ccc; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:11px;">Approved</button>`}
+            </td>
+        `;
+        list.appendChild(row);
+    });
+}
+
+// Fungsi untuk mengubah status approved dari false menjadi true
+async function approveAffiliate(id) {
+    if (!confirm("Setujui mitra ini?")) return;
+
+    const { error } = await db
+        .from('affiliates')
+        .update({ approved: true })
+        .eq('id', id);
+
+    if (error) {
+        alert("Gagal menyetujui: " + error.message);
+    } else {
+        alert("Mitra berhasil disetujui!");
+        fetchAffiliates(); // Refresh daftar
+    }
+}
+
+// Jangan lupa panggil fetchAffiliates() di bagian inisialisasi script
+
+
