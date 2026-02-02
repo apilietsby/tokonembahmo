@@ -333,4 +333,37 @@ document.addEventListener('DOMContentLoaded', () => {
 function cariProduk(keyword) {
     const filtered = allProducts.filter(p => p.name.toLowerCase().includes(keyword.toLowerCase()));
     renderProducts(filtered);
+
+}
+
+function daftarMitra(event) {
+    event.preventDefault(); // Mencegah halaman refresh
+
+    // Mengambil data dari form
+    const nama = document.getElementById('m-nama').value;
+    const hp = document.getElementById('m-hp').value;
+    const bank = document.getElementById('m-bank').value;
+    const tiktok = document.getElementById('m-tiktok').value;
+    const code = document.getElementById('m-code').value;
+
+    // Menyusun teks pesan WhatsApp
+    const pesan = `*PENDAFTARAN MITRA AFFILIATE - TOKONEMBAHMO*\n\n` +
+                  `Halo Admin, saya ingin mendaftar sebagai mitra:\n\n` +
+                  `• *Nama Lengkap:* ${nama}\n` +
+                  `• *No. WhatsApp:* ${hp}\n` +
+                  `• *Data Bank/Rek:* ${bank}\n` +
+                  `• *Username TikTok:* ${tiktok}\n` +
+                  `• *Request Kode:* ${code}\n\n` +
+                  `Mohon segera diproses, terima kasih!`;
+
+    // Membuka WhatsApp (Gunakan nomor admin yang sudah didefinisikan di awal script)
+    const urlWA = `https://wa.me/${noAdmin}?text=${encodeURIComponent(pesan)}`;
+    window.open(urlWA, '_blank');
+
+    // Memberikan notifikasi sukses di halaman
+    const msgEl = document.getElementById('mitra-msg');
+    if (msgEl) {
+        msgEl.innerText = "Pendaftaran telah dikirim ke WhatsApp Admin!";
+        msgEl.style.color = "#42b549";
+    }
 }
