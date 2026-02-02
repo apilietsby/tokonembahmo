@@ -1,282 +1,144 @@
-// ================= KONFIGURASI =================
-const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co'; 
+// ================= SETUP SUPABASE =================
+const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co';
 const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
-const noAdmin = '6285700800278';
 const db = supabase.createClient(supabaseUrl, supabaseKey);
 
-// Variabel Global
-let fileToUpload = null;
-let tempVariants = []; 
+document.addEventListener('DOMContentLoaded', () => {
+    loadProducts();
+    loadMitra();
+});
 
-// ================= 1. FUNGSI NAVIGASI & UI =================
-function showAddForm() {
-    document.getElementById('view-product-list').style.display = 'none';
-    document.getElementById('view-product-form').style.display = 'block';
-    document.getElementById('product-form').reset();
-    document.getElementById('edit-id').value = '';
-    document.getElementById('preview-img').style.display = 'none';
-    tempVariants = [];
-    renderVariantList();
-}
+// ================= FUNGSI PRODUK (CRUD) =================
 
-function cancelForm() {
-    document.getElementById('view-product-list').style.display = 'block';
-    document.getElementById('view-product-form').style.display = 'none';
-}
-
-// ================= 2. LOGIKA MANAJEMEN MITRA (AFFILIATE) =================
-
-async function fetchAffiliates() {
-    const list = document.getElementById('affiliate-list-admin');
-    if (!list) return;
-
-    const { data, error } = await db
-        .from('affiliates')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Gagal ambil data mitra:", error.message);
-        list.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal memuat data</td></tr>`;
-        return;
-    }
-
-    if (data.length === 0) {
-        list.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada pendaftar mitra</td></tr>`;
-        return;
-    }
-
-    list.innerHTML = data.map(m => `
-        <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 12px;">
-                <b>${m.full_name}</b><br>
-                <small style="color:#666;">@${m.tiktok_account || '-'}</small>
-            </td>
-            <td style="padding: 12px;">
-                <a href="https://wa.me/${m.phone_number}" target="_blank" style="text-decoration:none; color:#42b549; font-weight:bold;">
-                    <i class="ri-whatsapp-line"></i> ${m.phone_number}
-                </a>
-            </td>
-            <td style="padding: 12px;">
-                <code style="background:#e0f2f1; color:#00796b; padding:2px 5px; border-radius:4px; font-weight:bold;">
-                    ${m.referral_code}
-                </code>
-            </td>
-            <td style="padding: 12px;">
-                ${m.approved ? 
-                    '<span class="status-badge status-active">Aktif</span>' : 
-                    '<span class="status-badge status-pending">Menunggu</span>'}
-            </td>
-            <td style="padding: 12px;">
-                <div style="display:flex; gap:5px;">
-                    ${!m.approved ? 
-                        `<button onclick='approveAffiliate(${JSON.stringify(m)})' style="background:#42b549; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">Setujui</button>` : 
-                        `<button disabled style="background:#ccc; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:11px;">Approved</button>`}
-                    
-                    <button onclick="deleteAffiliate('${m.id}')" style="background:#ff4d4d; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:14px;">🗑️</button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// Fungsi HAPUS MITRA (BARU)
-window.deleteAffiliate = async (id) => {
-    if (!confirm("Yakin ingin menghapus data mitra ini secara permanen?")) return;
-
-    const { error } = await db
-        .from('affiliates')
-        .delete()
-        .eq('id', id);
-
-    if (error) {
-        alert("Gagal menghapus: " + error.message);
-    } else {
-        fetchAffiliates(); // Refresh tabel setelah dihapus
-    }
-};
-
-// Fungsi Approve (Tanpa WA Popup sesuai request terakhir)
-window.approveAffiliate = async (mitra) => {
-    // Karena passing object di HTML kadang error kutip, kita ambil ID-nya saja jika mau, 
-    // tapi cara JSON.stringify di atas sudah aman asal tidak ada karakter aneh.
-    // Untuk amannya, kita pakai object 'mitra' langsung.
-
-    if (!confirm(`Setujui ${mitra.full_name}? Status akan jadi AKTIF.`)) return;
-
-    const { error } = await db
-        .from('affiliates')
-        .update({ approved: true })
-        .eq('id', mitra.id);
-
-    if (error) {
-        alert("Gagal update database: " + error.message);
-    } else {
-        alert("Berhasil! Mitra sudah aktif dan bisa melihat link di dashboard mereka.");
-        fetchAffiliates(); 
-    }
-};
-
-
-// ================= 3. LOGIKA PRODUK & VARIAN =================
-function previewImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        fileToUpload = file;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const preview = document.getElementById('preview-img');
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-window.addVariantItem = async () => {
-    const vName = document.getElementById('v-name').value;
-    const vPrice = document.getElementById('v-price').value;
-    const vFile = document.getElementById('v-image').files[0];
-    const btnAdd = document.querySelector('button[onclick="addVariantItem()"]');
-
-    if (!vName || !vPrice) return alert("Isi Nama & Harga Varian!");
-
-    btnAdd.innerText = "Uploading...";
-    btnAdd.disabled = true;
-
-    let vImageUrl = "";
-    if (vFile) {
-        const fileName = `var_${Date.now()}`;
-        const { data, error } = await db.storage.from('product-images').upload(fileName, vFile);
-        if (!error) {
-            const { data: urlData } = db.storage.from('product-images').getPublicUrl(fileName);
-            vImageUrl = urlData.publicUrl;
-        }
-    }
-
-    tempVariants.push({ name: vName, price: parseInt(vPrice), image: vImageUrl });
-    
-    document.getElementById('v-name').value = '';
-    document.getElementById('v-price').value = '';
-    document.getElementById('v-image').value = '';
-    btnAdd.innerText = "+ Tambah ke List Varian";
-    btnAdd.disabled = false;
-    
-    renderVariantList();
-}
-
-function renderVariantList() {
-    const container = document.getElementById('variant-list-container');
-    container.innerHTML = tempVariants.map((v, i) => `
-        <div class="admin-item" style="margin-bottom:5px; background:#f9f9f9; padding:10px; border-radius:5px;">
-            <img src="${v.image || 'https://via.placeholder.com/50'}" style="width:40px; height:40px; object-fit:cover;">
-            <div class="item-info">
-                <strong>${v.name}</strong><br>Rp ${v.price.toLocaleString()}
-            </div>
-            <button type="button" onclick="removeVariant(${i})" style="color:red; border:none; background:none; cursor:pointer;">Hapus</button>
-        </div>
-    `).join('');
-}
-
-window.removeVariant = (index) => {
-    tempVariants.splice(index, 1);
-    renderVariantList();
-}
-
+// 1. Load Produk
 async function loadProducts() {
-    const container = document.getElementById('admin-product-list');
-    container.innerHTML = "Memuat...";
+    const { data, error } = await db.from('products').select('*').order('created_at', {ascending: false});
+    const container = document.getElementById('product-list-admin');
     
-    const search = document.getElementById('search-input').value;
-    let query = db.from('products').select('*').order('name', { ascending: true });
-    if(search) query = query.ilike('name', `%${search}%`);
-
-    const { data, error } = await query;
-    if (error) return container.innerHTML = "Gagal memuat.";
+    if (error) return console.error(error);
 
     container.innerHTML = data.map(p => `
-        <div class="admin-item">
-            <img src="${p.image_url || 'https://via.placeholder.com/60'}">
-            <div class="item-info">
-                <strong>${p.name}</strong><br>
-                <small>${p.sku} | Rp ${p.price.toLocaleString()}</small>
+        <div class="product-card" style="position: relative;">
+            <div class="img-wrapper">
+                <img src="${p.image_url || 'https://via.placeholder.com/150'}" alt="${p.name}">
             </div>
-            <div>
-                <button onclick='editProduct(${JSON.stringify(p)})'>✏️</button>
-                <button onclick="deleteProduct(${p.id})">🗑️</button>
+            <div class="card-info">
+                <div class="p-name">${p.name}</div>
+                <div class="p-price">Rp ${p.price.toLocaleString()}</div>
+                <div style="margin-top:auto; display:flex; gap:5px;">
+                    <button onclick="deleteProduct('${p.id}')" style="background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:12px; cursor:pointer; width:100%;">Hapus</button>
+                </div>
             </div>
+            ${p.is_active ? '' : '<div style="position:absolute; top:0; left:0; background:rgba(0,0,0,0.7); color:white; padding:2px 8px; font-size:10px;">Non-Aktif</div>'}
         </div>
     `).join('');
 }
 
-async function saveProduct(event) {
-    event.preventDefault();
-    const btn = document.getElementById('btn-save');
-    btn.innerText = "Menyimpan...";
+// 2. Buka Form Tambah
+window.openForm = () => {
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-tiktok').value = '';
+    document.getElementById('p-img').value = '';
+    document.getElementById('form-overlay').style.display = 'flex';
+};
+
+// 3. Simpan Produk Baru
+window.saveProduct = async function() {
+    const name = document.getElementById('p-name').value;
+    const price = document.getElementById('p-price').value;
+    const tiktok = document.getElementById('p-tiktok').value;
+    const file = document.getElementById('p-img').files[0];
+    const btn = document.querySelector('#form-overlay button:last-child'); // Tombol simpan
+
+    if(!name || !price || !file) return alert("Wajib isi Nama, Harga, dan Foto!");
+
+    btn.innerText = "Mengupload...";
     btn.disabled = true;
 
-    const id = document.getElementById('edit-id').value;
-    let imageUrl = null;
+    try {
+        // Upload Gambar
+        const fileName = `prod_${Date.now()}`;
+        const { error: uploadError } = await db.storage.from('product-images').upload(fileName, file);
+        if(uploadError) throw uploadError;
 
-    if (fileToUpload) {
-        const fileName = `main_${Date.now()}`;
-        await db.storage.from('product-images').upload(fileName, fileToUpload);
-        const { data } = db.storage.from('product-images').getPublicUrl(fileName);
-        imageUrl = data.publicUrl;
-    }
+        const { data: urlData } = db.storage.from('product-images').getPublicUrl(fileName);
+        
+        // Insert Data ke Database
+        const { error: dbError } = await db.from('products').insert([{
+            name: name,
+            price: parseInt(price),
+            image_url: urlData.publicUrl,
+            default_tiktok_link: tiktok,
+            is_active: true
+        }]);
 
-    const payload = {
-        name: document.getElementById('p-name').value,
-        sku: document.getElementById('p-sku').value,
-        price: parseInt(document.getElementById('p-price').value),
-        description: document.getElementById('p-desc').value,
-        default_tiktok_link: document.getElementById('p-tiktok').value,
-        is_active: document.getElementById('p-status').value === 'true',
-        variants: tempVariants
-    };
-    if (imageUrl) payload.image_url = imageUrl;
+        if(dbError) throw dbError;
 
-    const { error } = id 
-        ? await db.from('products').update(payload).eq('id', id)
-        : await db.from('products').insert([payload]);
+        alert("Produk Berhasil Ditambahkan!");
+        document.getElementById('form-overlay').style.display = 'none';
+        loadProducts(); // Refresh list
 
-    if (error) alert("Gagal simpan!");
-    else {
-        alert("Berhasil!");
-        cancelForm();
-        loadProducts();
-    }
-    btn.innerText = "Simpan Produk";
-    btn.disabled = false;
-}
-
-window.editProduct = (p) => {
-    showAddForm();
-    document.getElementById('edit-id').value = p.id;
-    document.getElementById('p-name').value = p.name;
-    document.getElementById('p-sku').value = p.sku;
-    document.getElementById('p-price').value = p.price;
-    document.getElementById('p-desc').value = p.description;
-    document.getElementById('p-tiktok').value = p.default_tiktok_link;
-    document.getElementById('p-status').value = String(p.is_active);
-    tempVariants = p.variants || [];
-    renderVariantList();
-    if(p.image_url) {
-        const preview = document.getElementById('preview-img');
-        preview.src = p.image_url;
-        preview.style.display = 'block';
+    } catch (err) {
+        alert("Gagal: " + err.message);
+    } finally {
+        btn.innerText = "Simpan Produk";
+        btn.disabled = false;
     }
 };
 
+// 4. Hapus Produk
 window.deleteProduct = async (id) => {
-    if(confirm("Hapus produk?")) {
+    if(confirm("Yakin ingin menghapus produk ini?")) {
         await db.from('products').delete().eq('id', id);
         loadProducts();
     }
 };
 
-// ================= 4. INISIALISASI =================
-document.addEventListener('DOMContentLoaded', () => {
-    loadProducts();
-    fetchAffiliates();
-});
+// ================= FUNGSI MITRA (APPROVAL) =================
+
+// 1. Load Daftar Mitra
+async function loadMitra() {
+    const { data, error } = await db.from('affiliates').select('*').order('created_at', {ascending: false});
+    const list = document.getElementById('mitra-list');
+    
+    if (error) return console.error(error);
+
+    list.innerHTML = data.map(m => `
+        <tr>
+            <td>
+                <b>${m.full_name}</b><br>
+                <small style="color:#666;">Tiktok: ${m.tiktok_account || '-'}</small>
+            </td>
+            <td>${m.phone_number}</td>
+            <td>
+                <span style="background:#eee; padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:bold;">
+                    ${m.referral_code}
+                </span>
+            </td>
+            <td>
+                ${m.approved 
+                    ? '<span class="status-badge active">Aktif</span>' 
+                    : '<span class="status-badge pending">Menunggu</span>'}
+            </td>
+            <td>
+                ${!m.approved 
+                    ? `<button onclick="approveMitra('${m.id}')" style="background:#42b549; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">Setujui</button>` 
+                    : '<button disabled style="background:#ddd; border:none; padding:5px 10px; border-radius:4px; color:#888;">Approved</button>'}
+            </td>
+        </tr>
+    `).join('');
+}
+
+// 2. Approve Mitra
+window.approveMitra = async (id) => {
+    if(confirm("Setujui pendaftaran mitra ini? Mereka akan bisa langsung melihat kode referral di dashboard.")) {
+        const { error } = await db.from('affiliates').update({approved: true}).eq('id', id);
+        
+        if(error) alert("Gagal update: " + error.message);
+        else {
+            alert("Mitra Disetujui!");
+            loadMitra();
+        }
+    }
+};
