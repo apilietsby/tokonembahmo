@@ -8,66 +8,78 @@ const db = supabase.createClient(supabaseUrl, supabaseKey);
 let products = [];
 let cart = [];
 
-// ================= INITIALIZATION =================
+// ================= LOAD AWAL =================
 document.addEventListener('DOMContentLoaded', () => {
+    // Cek Link Referral
     const params = new URLSearchParams(window.location.search);
     if (params.get('ref')) {
         sessionStorage.setItem('referral_code', params.get('ref'));
     }
+
     fetchProducts();
-    loadProvinces();
-    updateBadge(); 
+    loadProvinces(); // API Wilayah
+    updateBadge();   // Reset Badge 0
 });
 
-// ================= TAB NAVIGATION =================
+// ================= FUNGSI NAVIGASI & POPUP =================
+
+// 1. Ganti Tab (Beranda / Mitra)
 window.switchTab = function(tab) {
-    document.getElementById('store-view').style.display = 'none';
-    document.getElementById('cart-view').style.display = 'none';
+    document.getElementById('home-view').style.display = 'none';
     document.getElementById('mitra-view').style.display = 'none';
     
-    document.querySelectorAll('.b-nav-item').forEach(b => b.classList.remove('active'));
+    // Matikan semua tombol aktif
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-    if(tab === 'store') {
-        document.getElementById('store-view').style.display = 'block';
-        document.getElementById('nav-store').classList.add('active');
-    } else if(tab === 'cart') {
-        document.getElementById('cart-view').style.display = 'block';
-        document.getElementById('nav-cart').classList.add('active');
-        renderCart();
-    } else {
+    if (tab === 'home') {
+        document.getElementById('home-view').style.display = 'block';
+        // Set tombol pertama jadi aktif
+        document.querySelector('.bottom-nav a:nth-child(1)').classList.add('active');
+    } else if (tab === 'mitra') {
         document.getElementById('mitra-view').style.display = 'block';
-        document.getElementById('nav-mitra').classList.add('active');
+        document.querySelector('.bottom-nav a:nth-child(4)').classList.add('active');
     }
 };
 
-// ================= PRODUCT & STORE =================
+// 2. Buka/Tutup Keranjang (INI YANG KEMARIN ERROR)
+window.toggleCart = function(show) {
+    const modal = document.getElementById('cart-modal');
+    modal.style.display = show ? 'flex' : 'none';
+    if (show) renderCart(); // Render saat dibuka
+};
+
+// ================= PRODUK & KERANJANG =================
+
+// 1. Ambil Produk dari Database
 async function fetchProducts() {
     const { data, error } = await db.from('products').select('*').eq('is_active', true).order('name');
-    if(data) {
+    if (data) {
         products = data;
         renderProducts(data);
     }
 }
 
+// 2. Tampilkan Produk ke Grid HTML
 function renderProducts(list) {
     const container = document.getElementById('product-list');
+    
     container.innerHTML = list.map(p => {
-        // PERBAIKAN: Ikon TikTok menggunakan ri-tiktok-fill
+        // Logika Tombol TikTok
         const tiktokBtn = p.default_tiktok_link 
-            ? `<a href="${p.default_tiktok_link}" target="_blank" class="btn-tiktok"><i class="ri-tiktok-fill"></i></a>` 
+            ? `<a href="${p.default_tiktok_link}" target="_blank" class="btn-tiktok"><i class="ri-music-fill"></i></a>` 
             : '';
 
-        // PERBAIKAN: Menambahkan Deskripsi (p-desc)
-        const descShort = p.description ? p.description.substring(0, 40) + '...' : '';
+        // Potong deskripsi biar rapi
+        const desc = p.description ? p.description.substring(0, 35) + '...' : 'Produk berkualitas';
 
         return `
         <div class="product-card">
-            <div class="img-wrapper" onclick="addToCart('${p.id}')">
+            <div class="img-wrapper">
                 <img src="${p.image_url || 'https://via.placeholder.com/150'}" alt="${p.name}">
             </div>
             <div class="card-info">
-                <div class="p-name" onclick="addToCart('${p.id}')">${p.name}</div>
-                <div class="p-desc">${descShort}</div>
+                <div class="p-name">${p.name}</div>
+                <div class="p-desc">${desc}</div>
                 <div class="p-price">Rp ${p.price.toLocaleString()}</div>
                 
                 <div class="card-actions">
@@ -80,141 +92,143 @@ function renderProducts(list) {
     }).join('');
 }
 
-function searchProduct() {
-    const key = document.getElementById('search-input').value.toLowerCase();
-    const filtered = products.filter(p => p.name.toLowerCase().includes(key));
+// 3. Cari Produk
+window.cariProduk = function(keyword) {
+    const filtered = products.filter(p => p.name.toLowerCase().includes(keyword.toLowerCase()));
     renderProducts(filtered);
-}
+};
 
-// ================= CART SYSTEM =================
+// 4. Masukkan ke Keranjang
 window.addToCart = function(id) {
     const product = products.find(p => p.id === id);
-    const exist = cart.find(c => c.id === id);
-    if(exist) exist.qty++;
-    else cart.push({...product, qty: 1});
-    
+    const existingItem = cart.find(item => item.id === id);
+
+    if (existingItem) {
+        existingItem.qty++;
+    } else {
+        cart.push({ ...product, qty: 1 });
+    }
+
     updateBadge();
     
-    // Animasi tombol
+    // Efek Getar tombol
     const btn = event.target;
     if(btn.tagName === 'BUTTON') {
-        const oldText = btn.innerText;
-        btn.innerText = "✔ Masuk";
-        setTimeout(() => btn.innerText = oldText, 800);
+        btn.innerHTML = "✔ Masuk";
+        setTimeout(() => btn.innerHTML = "+ Keranjang", 1000);
     }
 };
 
-function updateBadge() {
-    const count = cart.reduce((a,b) => a + b.qty, 0);
-    const badgeBottom = document.getElementById('cart-badge');
-    const badgeTop = document.getElementById('cart-badge-top');
-    
-    if(badgeBottom) { badgeBottom.innerText = count; badgeBottom.style.display = count > 0 ? 'block' : 'none'; }
-    if(badgeTop) { badgeTop.innerText = count; badgeTop.style.display = count > 0 ? 'block' : 'none'; }
-}
-
+// 5. Render Isi Keranjang
 function renderCart() {
-    const container = document.getElementById('cart-items');
+    const container = document.getElementById('cart-items-container');
     let total = 0;
-    
-    if(cart.length === 0) {
-        container.innerHTML = "<p style='text-align:center; color:#888; padding:20px;'>Keranjang Kosong</p>";
-        document.getElementById('cart-total').innerText = "Rp 0";
+
+    if (cart.length === 0) {
+        container.innerHTML = "<p style='text-align:center; padding:20px; color:#999;'>Keranjang masih kosong.</p>";
+        document.getElementById('cart-total-price').innerText = "Rp 0";
         return;
     }
 
     container.innerHTML = cart.map((item, idx) => {
         total += item.price * item.qty;
         return `
-        <div style="display:flex; gap:10px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <img src="${item.image_url}" style="width:60px; height:60px; object-fit:cover; border-radius:6px;">
+        <div class="cart-item">
+            <img src="${item.image_url}" alt="${item.name}">
             <div style="flex:1;">
-                <div style="font-weight:bold; font-size:13px; margin-bottom:4px;">${item.name}</div>
+                <div style="font-weight:bold; font-size:13px;">${item.name}</div>
                 <div style="color:#42b549; font-weight:bold;">Rp ${item.price.toLocaleString()}</div>
+                
+                <div class="qty-control">
+                    <button class="qty-btn" onclick="ubahQty(${idx}, -1)">-</button>
+                    <span style="font-size:13px; min-width:20px; text-align:center;">${item.qty}</span>
+                    <button class="qty-btn" onclick="ubahQty(${idx}, 1)">+</button>
+                </div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <button onclick="changeQty(${idx}, -1)" style="padding:4px 10px; border:1px solid #ddd; background:white; border-radius:4px;">-</button>
-                <span style="font-weight:bold; font-size:14px;">${item.qty}</span>
-                <button onclick="changeQty(${idx}, 1)" style="padding:4px 10px; border:1px solid #ddd; background:white; border-radius:4px;">+</button>
-            </div>
-        </div>`;
+        </div>
+        `;
     }).join('');
-    
-    document.getElementById('cart-total').innerText = "Rp " + total.toLocaleString();
+
+    document.getElementById('cart-total-price').innerText = "Rp " + total.toLocaleString();
 }
 
-window.changeQty = function(idx, delta) {
-    cart[idx].qty += delta;
-    if(cart[idx].qty <= 0) cart.splice(idx, 1);
+// 6. Ubah Jumlah Item
+window.ubahQty = function(index, change) {
+    cart[index].qty += change;
+    if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+    }
     renderCart();
     updateBadge();
 };
 
-// PERBAIKAN UTAMA: CHECKOUT WHATSAPP
+function updateBadge() {
+    const count = cart.reduce((sum, item) => sum + item.qty, 0);
+    document.getElementById('cart-badge').innerText = count;
+}
+
+// ================= CHECKOUT SYSTEM =================
+
 window.checkoutWhatsApp = async function() {
-    if(cart.length === 0) return alert("Keranjang kosong!");
-    
-    const name = document.getElementById('c-name').value;
-    const phone = document.getElementById('c-phone').value;
-    const addr = document.getElementById('c-addr').value;
-    
-    // Ambil teks wilayah dengan aman (Safe Check)
-    const provEl = document.getElementById('c-prov');
-    const cityEl = document.getElementById('c-city');
-    const distEl = document.getElementById('c-dist');
+    if (cart.length === 0) return alert("Keranjang kosong!");
 
-    const prov = provEl.selectedIndex >= 0 ? provEl.options[provEl.selectedIndex].text : '-';
-    const city = cityEl.selectedIndex >= 0 ? cityEl.options[cityEl.selectedIndex].text : '-';
-    const dist = distEl.selectedIndex >= 0 ? distEl.options[distEl.selectedIndex].text : '-';
+    const name = document.getElementById('cart-name').value;
+    const phone = document.getElementById('cart-phone').value;
+    const addr = document.getElementById('cart-address').value;
 
-    if(!name || !phone || !addr) return alert("Mohon lengkapi Nama, WA, dan Alamat!");
+    // Ambil Data Wilayah (Aman)
+    const getTxt = (id) => {
+        const el = document.getElementById(id);
+        return el.options[el.selectedIndex]?.text || '-';
+    };
+    const wilayah = `${getTxt('cart-prov')}, ${getTxt('cart-city')}, ${getTxt('cart-dist')}`;
 
-    const btn = document.querySelector('#cart-view .btn-wa');
-    btn.innerHTML = "Membuka WhatsApp...";
+    if (!name || !phone || !addr) return alert("Mohon lengkapi Nama, WA, dan Alamat!");
+
+    // Button Loading
+    const btn = document.querySelector('#cart-modal .btn-wa');
+    const oldTxt = btn.innerHTML;
+    btn.innerHTML = "Memproses...";
     btn.disabled = true;
 
     // Siapkan Data
-    const total = cart.reduce((a,b) => a + (b.price * b.qty), 0);
+    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
     const ref = sessionStorage.getItem('referral_code') || '-';
-    const fullAddr = `${addr}, ${dist}, ${city}, ${prov}`;
+    const itemsList = cart.map(i => `- ${i.name} (${i.qty}x)`).join('\n');
     
-    // Siapkan Link WA DULUAN (Supaya kalau DB error, WA tetap jalan)
-    const items = cart.map(c => `- ${c.name} x${c.qty}`).join('\n');
-    const msg = `*ORDER BARU*\nNama: ${name}\nWA: ${phone}\nAlamat: ${fullAddr}\n\n*Pesanan:*\n${items}\n\n*Total: Rp ${total.toLocaleString()}*\nKode Ref: ${ref}`;
-    const waLink = `https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`;
+    // Pesan WA
+    const msg = `*ORDER BARU*\nNama: ${name}\nWA: ${phone}\nAlamat: ${addr}\nWilayah: ${wilayah}\n\n*Pesanan:*\n${itemsList}\n\n*Total Estimasi: Rp ${total.toLocaleString()}*\nKode Mitra: ${ref}`;
+    const linkWA = `https://wa.me/${noAdmin}?text=${encodeURIComponent(msg)}`;
 
     try {
-        // Coba Simpan ke Database (Background Process)
-        const { error } = await db.from('orders').insert([{
-            customer_name: name, customer_phone: phone, shipping_address: fullAddr,
-            total_amount: total, order_items: cart, referral_code: ref
+        // Simpan ke Database
+        await db.from('orders').insert([{
+            customer_name: name,
+            customer_phone: phone,
+            shipping_address: `${addr}, ${wilayah}`,
+            total_amount: total,
+            order_items: cart,
+            referral_code: ref
         }]);
-        
-        if(error) console.log("Info: Gagal simpan DB, tapi lanjut WA.");
-
     } catch (e) {
-        console.log("Error sistem:", e);
-    } finally {
-        // APAPUN YANG TERJADI, BUKA WHATSAPP
-        window.open(waLink, '_blank');
-        
-        // Reset
-        cart = []; updateBadge(); renderCart();
-        btn.innerHTML = "Order via WhatsApp";
-        btn.disabled = false;
+        console.log("Error DB, lanjut WA");
     }
+
+    // Buka WA
+    window.open(linkWA, '_blank');
+    
+    // Reset
+    cart = []; updateBadge(); toggleCart(false);
+    btn.innerHTML = oldTxt; btn.disabled = false;
 };
 
-// ================= MITRA & API WILAYAH (SAMA SEPERTI SEBELUMNYA) =================
-window.showMitraTab = function(type) {
-    document.getElementById('panel-daftar').style.display = type === 'daftar' ? 'block' : 'none';
-    document.getElementById('panel-cek').style.display = type === 'cek' ? 'block' : 'none';
-    document.getElementById('mt-daftar').style.background = type === 'daftar' ? '#42b549' : '#ccc';
-    document.getElementById('mt-cek').style.background = type === 'cek' ? '#42b549' : '#ccc';
-};
+// ================= LOGIKA MITRA =================
 
 window.daftarMitra = async function(e) {
     e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.innerText = "Mengirim..."; btn.disabled = true;
+
     const data = {
         full_name: document.getElementById('m-nama').value,
         phone_number: document.getElementById('m-hp').value,
@@ -223,51 +237,42 @@ window.daftarMitra = async function(e) {
         referral_code: document.getElementById('m-code').value,
         approved: false
     };
+
     const { error } = await db.from('affiliates').insert([data]);
-    if(error) alert("Gagal: " + error.message);
-    else { alert("Berhasil! Tunggu persetujuan admin."); e.target.reset(); }
-};
-
-window.cekStatusMitra = async function() {
-    const hp = document.getElementById('cek-hp').value;
-    const { data, error } = await db.from('affiliates').select('*').eq('phone_number', hp).single();
-    const msg = document.getElementById('msg-status');
-    if(error || !data) { msg.innerText = "Nomor tidak ditemukan!"; msg.style.color = "red"; }
-    else if (!data.approved) { msg.innerText = "Akun MENUNGGU persetujuan."; msg.style.color = "orange"; }
-    else {
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('mitra-dash').style.display = 'block';
-        document.getElementById('dash-nama').innerText = data.full_name;
-        document.getElementById('dash-code').innerText = data.referral_code;
-        document.getElementById('dash-link').value = window.location.origin + "/?ref=" + data.referral_code;
+    
+    const msgEl = document.getElementById('mitra-msg');
+    if (error) {
+        msgEl.innerText = "Gagal: " + error.message; msgEl.style.color = "red";
+    } else {
+        msgEl.innerText = "Berhasil! Admin akan segera menghubungi Anda."; 
+        msgEl.style.color = "green";
+        e.target.reset();
     }
+    btn.innerText = "Kirim Pendaftaran via WA"; btn.disabled = false;
 };
 
-window.copyLink = function() {
-    const link = document.getElementById('dash-link');
-    link.select(); navigator.clipboard.writeText(link.value);
-    alert("Link tersalin!");
-};
-
+// ================= API WILAYAH =================
 async function loadProvinces() {
     try {
-        const r = await fetch('https://kanglerian.github.io/api-wilayah-indonesia/api/provinces.json');
-        const d = await r.json();
-        const s = document.getElementById('c-prov');
-        s.innerHTML = '<option value="">Pilih Provinsi</option>' + d.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-        s.onchange = () => loadRegencies(s.value);
+        const res = await fetch('https://kanglerian.github.io/api-wilayah-indonesia/api/provinces.json');
+        const data = await res.json();
+        const el = document.getElementById('cart-prov');
+        el.innerHTML = '<option value="">Pilih Provinsi...</option>' + data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
     } catch(e) {}
 }
-async function loadRegencies(id) {
-    const r = await fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/regencies/${id}.json`);
-    const d = await r.json();
-    const s = document.getElementById('c-city'); s.disabled=false;
-    s.innerHTML = '<option value="">Pilih Kota</option>' + d.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-    s.onchange = () => loadDistricts(s.value);
-}
-async function loadDistricts(id) {
-    const r = await fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/districts/${id}.json`);
-    const d = await r.json();
-    const s = document.getElementById('c-dist'); s.disabled=false;
-    s.innerHTML = '<option value="">Pilih Kecamatan</option>' + d.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-}
+
+window.loadKota = async function(id) {
+    const res = await fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/regencies/${id}.json`);
+    const data = await res.json();
+    const el = document.getElementById('cart-city');
+    el.disabled = false; el.style.background = "white";
+    el.innerHTML = '<option value="">Pilih Kota/Kab...</option>' + data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+};
+
+window.loadKecamatan = async function(id) {
+    const res = await fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/districts/${id}.json`);
+    const data = await res.json();
+    const el = document.getElementById('cart-dist');
+    el.disabled = false; el.style.background = "white";
+    el.innerHTML = '<option value="">Pilih Kecamatan...</option>' + data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+};
