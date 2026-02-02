@@ -441,6 +441,87 @@ async function approveAffiliate(id) {
     }
 }
 
+// --- LOGIKA TAB MITRA ---
+function showMitraTab(tab) {
+    const btnDaftar = document.getElementById('btn-tab-daftar');
+    const btnCek = document.getElementById('btn-tab-cek');
+    const pDaftar = document.getElementById('panel-daftar');
+    const pCek = document.getElementById('panel-cek');
+
+    if (tab === 'daftar') {
+        btnDaftar.style.background = "#42b549";
+        btnCek.style.background = "#ccc";
+        pDaftar.style.display = "block";
+        pCek.style.display = "none";
+    } else {
+        btnDaftar.style.background = "#ccc";
+        btnCek.style.background = "#42b549";
+        pDaftar.style.display = "none";
+        pCek.style.display = "block";
+    }
+}
+
+// --- LOGIKA CEK STATUS / LOGIN MITRA ---
+async function cekStatusMitra() {
+    const hp = document.getElementById('cek-hp').value;
+    const msg = document.getElementById('mitra-status-msg');
+    const dash = document.getElementById('mitra-dashboard');
+    const btn = document.querySelector('#mitra-login-form button');
+
+    if (!hp) return alert("Masukkan nomor WA!");
+
+    // Reset Tampilan
+    msg.innerText = "";
+    dash.style.display = "none";
+    btn.innerText = "Mengecek Database...";
+    btn.disabled = true;
+
+    try {
+        // Cari data di Supabase berdasarkan No HP
+        const { data, error } = await db
+            .from('affiliates')
+            .select('*')
+            .eq('phone_number', hp) // Pastikan kolom ini sesuai database Anda
+            .single(); // Ambil satu data saja
+
+        if (error || !data) {
+            msg.innerText = "Nomor tidak ditemukan. Silakan daftar dulu.";
+            msg.style.color = "red";
+        } else if (data.approved === false) {
+            msg.innerText = "Pendaftaran Anda masih MENUNGGU persetujuan Admin.";
+            msg.style.color = "#ff9800"; // Warna oranye
+        } else {
+            // JIKA SUKSES & APPROVED
+            msg.innerText = "";
+            document.getElementById('mitra-login-form').style.display = 'none'; // Sembunyikan form login
+            dash.style.display = 'block'; // Munculkan dashboard
+            
+            // Isi Data Dashboard
+            document.getElementById('dash-nama').innerText = data.full_name;
+            document.getElementById('dash-code').innerText = data.referral_code;
+            
+            // Generate Link Otomatis
+            const link = `https://tokonembahmo.netlify.app/?ref=${data.referral_code}`;
+            document.getElementById('dash-link').value = link;
+        }
+
+    } catch (err) {
+        console.error(err);
+        msg.innerText = "Terjadi kesalahan sistem.";
+    } finally {
+        btn.innerText = "Masuk Dashboard";
+        btn.disabled = false;
+    }
+}
+
+function copyLinkMitra() {
+    const linkInput = document.getElementById('dash-link');
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999); // Untuk HP
+    navigator.clipboard.writeText(linkInput.value);
+    alert("Link berhasil disalin! Silakan sebarkan di TikTok/WA.");
+}
 // Jangan lupa panggil fetchAffiliates() di bagian inisialisasi script
+
 
 
