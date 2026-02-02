@@ -1,6 +1,6 @@
 // ================= SETUP SUPABASE =================
 const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co';
-const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O'; // Pastikan key ini benar
+const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
 const noAdmin = '6285700800278'; 
 const db = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -10,15 +10,13 @@ let cart = [];
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cek Referral Code
     const params = new URLSearchParams(window.location.search);
     if (params.get('ref')) {
         sessionStorage.setItem('referral_code', params.get('ref'));
     }
-
-    // 2. Load Data
     fetchProducts();
     loadProvinces();
+    updateBadge(); // Reset badge saat load
 });
 
 // ================= TAB NAVIGATION =================
@@ -53,18 +51,29 @@ async function fetchProducts() {
 
 function renderProducts(list) {
     const container = document.getElementById('product-list');
-    container.innerHTML = list.map(p => `
-        <div class="product-card" onclick="addToCart('${p.id}')">
-            <div class="img-wrapper">
+    container.innerHTML = list.map(p => {
+        // Cek apakah ada link tiktok
+        const tiktokBtn = p.default_tiktok_link 
+            ? `<a href="${p.default_tiktok_link}" target="_blank" class="btn-tiktok"><i class="ri-music-fill"></i></a>` 
+            : '';
+
+        return `
+        <div class="product-card">
+            <div class="img-wrapper" onclick="addToCart('${p.id}')">
                 <img src="${p.image_url || 'https://via.placeholder.com/150'}" alt="${p.name}">
             </div>
             <div class="card-info">
-                <div class="p-name">${p.name}</div>
+                <div class="p-name" onclick="addToCart('${p.id}')">${p.name}</div>
                 <div class="p-price">Rp ${p.price.toLocaleString()}</div>
-                <button class="btn-add">+ Keranjang</button>
+                
+                <div class="card-actions">
+                    <button class="btn-add" onclick="addToCart('${p.id}')">+ Keranjang</button>
+                    ${tiktokBtn}
+                </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function searchProduct() {
@@ -81,14 +90,32 @@ window.addToCart = function(id) {
     else cart.push({...product, qty: 1});
     
     updateBadge();
-    alert("Masuk keranjang!");
+    
+    // Animasi kecil (Opsional)
+    const btn = event.target;
+    const oldText = btn.innerText;
+    if(btn.tagName === 'BUTTON') {
+        btn.innerText = "✔ Masuk";
+        setTimeout(() => btn.innerText = oldText, 1000);
+    }
 };
 
 function updateBadge() {
     const count = cart.reduce((a,b) => a + b.qty, 0);
-    const badge = document.getElementById('cart-badge');
-    badge.innerText = count;
-    badge.style.display = count > 0 ? 'block' : 'none';
+    
+    // Update Badge Bawah
+    const badgeBottom = document.getElementById('cart-badge');
+    if(badgeBottom) {
+        badgeBottom.innerText = count;
+        badgeBottom.style.display = count > 0 ? 'block' : 'none';
+    }
+
+    // Update Badge Atas (Header Baru)
+    const badgeTop = document.getElementById('cart-badge-top');
+    if(badgeTop) {
+        badgeTop.innerText = count;
+        badgeTop.style.display = count > 0 ? 'block' : 'none';
+    }
 }
 
 function renderCart() {
@@ -96,7 +123,7 @@ function renderCart() {
     let total = 0;
     
     if(cart.length === 0) {
-        container.innerHTML = "<p style='text-align:center; color:#888;'>Keranjang Kosong</p>";
+        container.innerHTML = "<p style='text-align:center; color:#888; padding:20px;'>Keranjang Kosong</p>";
         document.getElementById('cart-total').innerText = "Rp 0";
         return;
     }
@@ -104,16 +131,16 @@ function renderCart() {
     container.innerHTML = cart.map((item, idx) => {
         total += item.price * item.qty;
         return `
-        <div style="display:flex; gap:10px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
-            <img src="${item.image_url}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;">
+        <div style="display:flex; gap:10px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <img src="${item.image_url}" style="width:60px; height:60px; object-fit:cover; border-radius:6px;">
             <div style="flex:1;">
-                <div style="font-weight:bold; font-size:13px;">${item.name}</div>
-                <div style="color:green;">Rp ${item.price.toLocaleString()}</div>
+                <div style="font-weight:bold; font-size:13px; margin-bottom:4px;">${item.name}</div>
+                <div style="color:#42b549; font-weight:bold;">Rp ${item.price.toLocaleString()}</div>
             </div>
-            <div style="display:flex; align-items:center; gap:5px;">
-                <button onclick="changeQty(${idx}, -1)" style="padding:2px 8px;">-</button>
-                <span>${item.qty}</span>
-                <button onclick="changeQty(${idx}, 1)" style="padding:2px 8px;">+</button>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button onclick="changeQty(${idx}, -1)" style="padding:4px 10px; border:1px solid #ddd; background:white; border-radius:4px;">-</button>
+                <span style="font-weight:bold; font-size:14px;">${item.qty}</span>
+                <button onclick="changeQty(${idx}, 1)" style="padding:4px 10px; border:1px solid #ddd; background:white; border-radius:4px;">+</button>
             </div>
         </div>`;
     }).join('');
