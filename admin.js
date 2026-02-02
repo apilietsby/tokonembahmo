@@ -4,7 +4,48 @@
 const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co/'; 
 const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
 // const noAdmin = '6285700800278'; // Tidak dipakai di admin.js, hanya di script.js toko
+// ... kode supabase di atas tetap biarkan ...
 const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+// --- TAMBAHKAN KODE INI (MULAI) ---
+
+// 1. KONFIGURASI PASSWORD
+const ADMIN_PASS = "admin123"; // <--- Ganti Password Disini
+
+// 2. FUNGSI CEK LOGIN
+function checkLogin() {
+    // Ambil password yang diketik user
+    const input = document.getElementById('admin-pass').value;
+    const msg = document.getElementById('login-msg');
+
+    // Cek apakah password benar?
+    if (input === ADMIN_PASS) {
+        // Jika benar, hilangkan layar login
+        document.getElementById('login-overlay').style.display = 'none';
+    } else {
+        // Jika salah, munculkan pesan error
+        if(msg) msg.innerText = "Password Salah!";
+        else alert("Password Salah!");
+    }
+}
+
+// Agar bisa tekan Enter untuk login
+document.addEventListener("DOMContentLoaded", () => {
+    const passInput = document.getElementById("admin-pass");
+    if(passInput) {
+        passInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                checkLogin();
+            }
+        });
+    }
+});
+
+// --- TAMBAHKAN KODE INI (SELESAI) ---
+
+// Variabel Global (lanjutan kode lama Anda...)
+let fileToUpload = null;
+// ... dst
 
 // Variabel Global
 let fileToUpload = null;
@@ -293,3 +334,4 @@ window.deleteProduct = async (id) => {
 
 // Initial Load
 loadProducts();
+
