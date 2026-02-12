@@ -1,2 +1,31 @@
-VITE_SUPABASE_URL=https://apskbihwpbgvooiskrel.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwc2tiaWh3cGJndm9oaXNrZWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjU5ODMsImV4cCI6MjA4NjQwMTk4M30.Cvq-1GWPvOroJjGIVFsI3P9EQRUW7XR7Q_1fnaPyQow
+async function fetchProducts() {
+    try {
+        const { data } = await supabase
+            .from('products')
+            .select('*'); // Selecting all columns
+
+        renderProducts(data);
+    } catch (error) {
+        console.error('Error fetching products:', error);
+    }
+}
+
+function renderProducts(products) {
+    const productContainer = document.getElementById('product-container');
+    productContainer.innerHTML = ''; // Clear existing products
+
+    products.forEach(product => {
+        const productDiv = document.createElement('div');
+        productDiv.classList.add('product');
+        productDiv.innerHTML = `
+            <img src="${product.image_url}" alt="${product.name}" />
+            <h3>${product.name}</h3>
+            <p>Price: ${product.price_small}</p>
+            <p>Category: ${product.category}</p>
+            <p>Unit (Small): ${product.unit_small}</p>
+            <p>Unit (Bulk): ${product.unit_bulk}</p>
+            <p>Price (Bulk): ${product.price_bulk}</p>
+        `;
+        productContainer.appendChild(productDiv);
+    });
+}
