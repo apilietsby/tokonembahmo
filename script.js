@@ -1,7 +1,7 @@
 // KONFIGURASI SUPABASE
 const supabaseUrl = 'https://apskbihwpbgvooiskrel.supabase.co/'; 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwc2tiaWh3cGJndm9vaXNrcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjU5ODMsImV4cCI6MjA4NjQwMTk4M30.Cvq-1GWPvOroJjGIVFsI3P9EQRUW7XR7Q_1fnaPyQow';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const db = supabase.createClient(supabaseUrl, supabaseKey);
 
 // STATE APLIKASI
 let allProducts = [];
@@ -36,7 +36,7 @@ async function fetchProducts() {
     list.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px;"><i class="ri-loader-4-line ri-spin"></i><br>Memuat produk...</div>';
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('products')
             .select('*');
 
