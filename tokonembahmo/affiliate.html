@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affiliate Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        header { background: linear-gradient(to right, #ff7e5f, #feb47b); padding: 10px; text-align: center; color: white; }
+        nav { margin: 20px; }
+        nav a { margin: 0 15px; text-decoration: none; color: #333; }
+        .tabs { display: flex; justify-content: space-around; }
+        .tab { flex-grow: 1; text-align: center; padding: 10px; border: 1px solid #ccc; }
+        .stat-card { border: 1px solid #ccc; padding: 20px; margin: 10px; border-radius: 4px; }
+        form { margin: 20px 0; }
+        @media (max-width: 600px) {
+            .tabs { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Mobile-first Affiliate Dashboard</h1>
+    </header>
+    <nav class="tabs">
+        <a class="tab" href="#ringkasan">Ringkasan</a>
+        <a class="tab" href="#link">Link</a>
+        <a class="tab" href="#penjualan">Penjualan</a>
+        <a class="tab" href="#komisi">Komisi</a>
+        <a class="tab" href="#tarik">Tarik</a>
+    </nav>
+    <main>
+        <section id="ringkasan">
+            <div class="stat-card">Stat Card 1</div>
+            <div class="stat-card">Stat Card 2</div>
+        </section>
+        <section id="link">
+            <h2>Link Generation</h2>
+            <form>
+                <label for="tiktok-url">Custom TikTok URL:</label>
+                <input type="text" id="tiktok-url" name="tiktok-url"><br>
+                <button type="submit">Generate Link</button>
+            </form>
+        </section>
+        <section id="penjualan">
+            <h2>Order List</h2>
+            <ul>
+                <li>Order 1</li>
+                <li>Order 2</li>
+            </ul>
+        </section>
+        <section id="komisi">
+            <h2>Commission Logs</h2>
+            <ul>
+                <li>Commission Log 1</li>
+                <li>Commission Log 2</li>
+            </ul>
+        </section>
+        <section id="tarik">
+            <h2>Payout Request System</h2>
+            <form>
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" name="amount"><br>
+                <button type="submit">Request Payout</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

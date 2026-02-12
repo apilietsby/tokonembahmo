@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Tokonembahmo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* CSS Admin Sederhana & Bersih */
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .admin-container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* Header */
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
+        h2 { margin: 0; color: #2c3e50; }
+        .btn-view-store { text-decoration: none; color: #007bff; font-weight: bold; }
+
+        /* Login Overlay */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; width: 300px; }
+        
+        /* Buttons */
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .btn-add { background: #27ae60; color: white; width: 100%; margin-bottom: 20px; }
+        .btn-save { background: #2980b9; color: white; }
+        .btn-cancel { background: #95a5a6; color: white; margin-right: 10px; }
+        
+        /* Form Inputs */
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        label { font-weight: 600; display: block; margin-bottom: 5px; font-size: 13px; color: #555; }
+        
+        /* List Item */
+        .admin-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f0f0f0; background: #fff; }
+        .admin-item:hover { background: #f9f9f9; }
+        .admin-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; margin-right: 15px; border: 1px solid #eee; }
+        .item-info { flex-grow: 1; }
+
+        /* Preview Image */
+        #preview-img { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: none; margin-bottom: 10px; border: 2px dashed #ccc; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h3 style="margin-top:0;">🔒 Admin Login</h3>
+            <input type="password" id="admin-pass" placeholder="Password...">
+            <button class="btn btn-save" style="width:100%" onclick="checkLogin()">MASUK</button>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h2>Panel Admin</h2>
+            <a href="index.html" class="btn-view-store" target="_blank">Buka Toko ↗</a>
+        </div>
+
+        <div id="view-product-list">
+            <input type="text" id="search-input" placeholder="🔍 Cari nama barang..." onkeyup="loadProducts()">
+            <button onclick="showAddForm()" class="btn btn-add">+ Tambah Produk Baru</button>
+            
+            <div id="admin-product-list">
+                <p style="text-align:center; color:#888;">Memuat data...</p>
+            </div>
+        </div>
+
+        <div id="view-product-form" style="display: none;">
+            <h3 style="margin-top: 0; color: #2980b9;">Form Produk</h3>
+            
+            <form id="product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="edit-id">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Nama Produk</label>
+                        <input type="text" id="p-name" placeholder="Contoh: Kopi Bubuk" required>
+                    </div>
+                    <div>
+                        <label>Kode SKU (Unik)</label>
+                        <input type="text" id="p-sku" placeholder="Contoh: KOPI-01" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Harga (Rp)</label>
+                        <input type="number" id="p-price" placeholder="Contoh: 15000" required>
+                    </div>
+                    <div>
+                        <label>Status</label>
+                        <select id="p-status">
+                            <option value="true">Aktif (Tampil)</option>
+                            <option value="false">Arsip (Sembunyi)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label>Deskripsi Produk</label>
+                <textarea id="p-desc" rows="3" placeholder="Jelaskan produk Anda..."></textarea>
+
+                <label>Link TikTok Shop (Opsional)</label>
+                <input type="text" id="p-tiktok" placeholder="https://...">
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="margin:0; color:#555;">Varian (Opsional)</h4>
+                        <button type="button" onclick="clearVariants()" style="font-size:11px; background:none; border:none; color:red; cursor:pointer; text-decoration:underline;">Hapus Semua Varian</button>
+                </div>
+    
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                    <input type="text" id="v-name" placeholder="Nama (Cth: Merah / XL)">
+                    <input type="number" id="v-price" placeholder="Harga">
+                </div>
+    
+                <button type="button" onclick="addVariantItem()" class="btn" style="background:#6c757d; color:white; width:100%; margin-top:5px;">+ Tambah Varian</button>
+
+                <div id="variant-list-container" style="margin-top:10px; max-height: 200px; overflow-y: auto;">
+                    </div>
+                <p style="font-size:11px; color:#888; margin-top:5px;">*Jika tidak ada varian, biarkan kosong. Harga akan mengikuti harga utama di atas.</p>
+            </div>
+
+                <label>Foto Utama Produk</label>
+                <img id="preview-img" alt="Preview">
+                <input type="file" id="p-image" accept="image/*" onchange="previewImage(event)">
+
+                <div style="margin-top: 25px; text-align: right; border-top: 1px solid #eee; padding-top: 20px;">
+                    <button type="button" onclick="cancelForm()" class="btn btn-cancel">Batal</button>
+                    <button type="submit" id="btn-save" class="btn btn-save">Simpan Produk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
+
