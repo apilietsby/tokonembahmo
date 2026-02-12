@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Label - Tokonembahmo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
+    
+    <style>
+        @media print {
+            @page {
+                size: A5 portrait;
+                margin: 0;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .print-container {
+            width: 148mm;
+            height: 210mm;
+            background: white;
+            margin: 0 auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Top Half: Shipping Label */
+        .label-section {
+            height: 50%;
+            padding: 15mm;
+            border-bottom: 2px dashed #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .label-header {
+            text-align: center;
+            margin-bottom: 10mm;
+        }
+        
+        .label-header h1 {
+            font-size: 24pt;
+            color: #42b549;
+            margin-bottom: 5px;
+        }
+        
+        .label-header .order-number {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .label-info {
+            flex-grow: 1;
+        }
+        
+        .label-info .field {
+            margin-bottom: 8mm;
+        }
+        
+        .label-info .field-label {
+            font-size: 10pt;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        
+        .label-info .field-value {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.4;
+        }
+        
+        .label-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 5mm;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .label-footer .courier {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #42b549;
+        }
+        
+        .label-footer .total {
+            text-align: right;
+        }
+        
+        .label-footer .total-label {
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        .label-footer .total-value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #d32f2f;
+        }
+        
+        /* Bottom Half: Packing List */
+        .packing-section {
+            height: 50%;
+            padding: 15mm;
+        }
+        
+        .packing-header {
+            text-align: center;
+            margin-bottom: 8mm;
+            padding-bottom: 5mm;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .packing-header h2 {
+            font-size: 18pt;
+            color: #333;
+        }
+        
+        .packing-items {
+            margin-bottom: 8mm;
+        }
+        
+        .packing-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4mm 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 11pt;
+        }
+        
+        .packing-item .item-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .packing-item .item-qty {
+            font-weight: bold;
+            color: #42b549;
+        }
+        
+        .packing-summary {
+            background: #f8f9fa;
+            padding: 5mm;
+            border-radius: 4mm;
+        }
+        
+        .packing-summary .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3mm;
+            font-size: 11pt;
+        }
+        
+        .packing-summary .summary-row:last-child {
+            margin-bottom: 0;
+            padding-top: 3mm;
+            border-top: 2px solid #e0e0e0;
+            font-weight: bold;
+            font-size: 13pt;
+        }
+        
+        /* Control Buttons */
+        .controls {
+            text-align: center;
+            margin: 20px auto;
+        }
+        
+        .controls button {
+            padding: 12px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .btn-print {
+            background: #42b549;
+            color: white;
+        }
+        
+        .btn-print:hover {
+            background: #35963b;
+        }
+        
+        .btn-back {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-back:hover {
+            background: #5a6268;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 16px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls no-print">
+        <button class="btn-print" onclick="window.print()">🖨️ Cetak Label</button>
+        <button class="btn-back" onclick="window.close()">← Kembali</button>
+    </div>
+    
+    <div id="loading" class="loading">
+        Memuat data pesanan...
+    </div>
+    
+    <div id="print-content" style="display: none;">
+        <div class="print-container">
+            <!-- Top Half: Shipping Label -->
+            <div class="label-section">
+                <div class="label-header">
+                    <h1>🌿 TOKONEMBAHMO</h1>
+                    <div class="order-number" id="label-order-number">#ORD123456</div>
+                </div>
+                
+                <div class="label-info">
+                    <div class="field">
+                        <div class="field-label">PENERIMA:</div>
+                        <div class="field-value" id="label-customer-name">-</div>
+                    </div>
+                    
+                    <div class="field">
+                        <div class="field-label">ALAMAT:</div>
+                        <div class="field-value" id="label-address">-</div>
+                    </div>
+                    
+                    <div class="field">
+                        <div class="field-label">NO. WHATSAPP:</div>
+                        <div class="field-value" id="label-phone">-</div>
+                    </div>
+                </div>
+                
+                <div class="label-footer">
+                    <div class="courier">
+                        <div style="font-size: 10pt; color: #666;">KURIR:</div>
+                        <div id="label-courier">JNE</div>
+                    </div>
+                    <div class="total">
+                        <div class="total-label">TOTAL BAYAR:</div>
+                        <div class="total-value" id="label-total">Rp 0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Half: Packing List -->
+            <div class="packing-section">
+                <div class="packing-header">
+                    <h2>📦 DAFTAR BARANG</h2>
+                </div>
+                
+                <div class="packing-items" id="packing-items">
+                    <!-- Items will be inserted here -->
+                </div>
+                
+                <div class="packing-summary">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="summary-subtotal">Rp 0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Ongkir:</span>
+                        <span id="summary-shipping">Rp 0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>TOTAL:</span>
+                        <span id="summary-total">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="print.js"></script>
+</body>
+</html>
