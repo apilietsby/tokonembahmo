@@ -1,10 +1,22 @@
-// script.js - VERSI DISEMPURNAKAN (FRONTEND TOKO)
+// script.js - TOKONEMBAHMO V2 (FRONTEND TOKO)
 
 // KONFIGURASI SUPABASE
-const supabaseUrl = 'https://klmocjsgssormjutrvvi.supabase.co/'; 
-const supabaseKey = 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
-const noAdmin = '6285700800278';
+const supabaseUrl = window.CONFIG?.SUPABASE_URL || 'https://klmocjsgssormjutrvvi.supabase.co/'; 
+const supabaseKey = window.CONFIG?.SUPABASE_ANON_KEY || 'sb_publishable_xptu-xifm5t1EmGHsaC7Og_XJ4e2E_O';
+const noAdmin = window.CONFIG?.ADMIN_WA || '6285700800278';
 const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+// Initialize API Client
+const apiClient = new ApiClient(db);
+
+// Get referral code from URL if present
+const urlParams = new URLSearchParams(window.location.search);
+const referralCode = urlParams.get('ref') || null;
+
+// Store referral in session
+if (referralCode) {
+    sessionStorage.setItem('referral_code', referralCode);
+}
 
 // STATE APLIKASI
 let allProducts = [];
@@ -382,51 +394,154 @@ async function loadKecamatan(cityId) {
     }
 }
 
-function checkoutWhatsApp() {
+async function checkoutWhatsApp() {
     if(cart.length === 0) return alert("Keranjang kosong!");
     
-    const nama = document.getElementById('cart-name').value.trim();
-    const hp = document.getElementById('cart-phone').value.trim();
-    const prov = document.getElementById('cart-prov');
-    const kota = document.getElementById('cart-city');
-    const kec = document.getElementById('cart-dist');
-    const alamat = document.getElementById('cart-address').value.trim();
+    const nama = document.getElementById('c-name').value.trim();
+    const hp = document.getElementById('c-phone').value.trim();
+    const lokasi = document.getElementById('c-loc').value.trim();
+    const alamat = document.getElementById('c-addr').value.trim();
 
-    // Validasi Sederhana
-    if(!nama || !hp || !alamat) {
-        return alert("Mohon lengkapi Nama, No HP, dan Alamat Jalan!");
+    // Validasi
+    if(!nama || !hp || !lokasi || !alamat) {
+        return alert("Mohon lengkapi semua data pengiriman!");
     }
     
-    // Validasi Wilayah (jika dropdown ada isinya / API load sukses)
-    if(prov.options.length > 1 && (!prov.value || !kota.value || !kec.value)) {
-         return alert("Mohon pilih Provinsi, Kota, dan Kecamatan!");
+    // Format WhatsApp number
+    let waNumber = hp.replace(/\D/g, ''); // Remove non-digits
+    if (waNumber.startsWith('0')) {
+        waNumber = '62' + waNumber.substring(1);
+    } else if (!waNumber.startsWith('62')) {
+        waNumber = '62' + waNumber;
     }
     
-    // Ambil nama wilayah jika terpilih, jika tidak strip aja (antisipasi API gagal)
-    const provName = prov.selectedIndex > 0 ? prov.options[prov.selectedIndex].text : '';
-    const kotaName = kota.selectedIndex > 0 ? kota.options[kota.selectedIndex].text : '';
-    const kecName = kec.selectedIndex > 0 ? kec.options[kec.selectedIndex].text : '';
-    const fullAddress = `${alamat}${kecName ? `, ${kecName}` : ''}${kotaName ? `, ${kotaName}` : ''}${provName ? `, ${provName}` : ''}`;
+    const fullAddress = `${alamat}, ${lokasi}`;
 
-    let listProduk = "";
-    let totalHarga = 0;
-    cart.forEach((item, i) => {
-        listProduk += `${i+1}. ${item.name} (${item.qty}x) - Rp ${(item.price * item.qty).toLocaleString()}\n`;
-        totalHarga += item.price * item.qty;
-    });
+    try {
+        // Show loading
+        const btnCheckout = document.querySelector('.btn-wa');
+        const originalText = btnCheckout.innerHTML;
+        btnCheckout.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses...';
+        btnCheckout.disabled = true;
 
-    const teks = `*ORDER BARU - TOKONEMBAHMO*\n\n` +
-                 `*Daftar Belanja:*\n${listProduk}\n` +
-                 `*Total Harga: Rp ${totalHarga.toLocaleString()}*\n` +
-                 `_(Belum termasuk ongkir)_\n\n` +
-                 `*Data Penerima:*\n` +
-                 `Nama: ${nama}\n` +
-                 `WhatsApp: ${hp}\n` +
-                 `Alamat Lengkap:\n${fullAddress}`;
+        // Check for affiliate binding or referral
+        let affiliateCode = null;
+        let isSelfReferral = false;
+        
+        // Get referral from session storage
+        const sessionReferral = sessionStorage.getItem('referral_code');
+        
+        if (sessionReferral) {
+            try {
+                // Check if affiliate exists and is active
+                const affiliate = await apiClient.getAffiliateByCode(sessionReferral);
+                if (affiliate) {
+                    // Check for self-referral
+                    if (affiliate.whatsapp_number === waNumber) {
+                        isSelfReferral = true;
+                        console.log('Self-referral detected');
+                    } else {
+                        affiliateCode = sessionReferral;
+                        // Create binding for future orders
+                        await apiClient.createOrUpdateBinding(waNumber, affiliateCode, 90);
+                    }
+                }
+            } catch (err) {
+                console.log('Referral code not valid or affiliate inactive');
+            }
+        } else {
+            // Check existing binding
+            const binding = await apiClient.getCustomerBinding(waNumber);
+            if (binding) {
+                affiliateCode = binding.affiliate_code;
+            }
+        }
 
-    // Encode URI Component agar karakter khusus (&, +, dll) aman di URL
-    const waUrl = `https://wa.me/${noAdmin}?text=${encodeURIComponent(teks)}`;
-    window.open(waUrl, '_blank');
+        // Calculate order details
+        let subtotal = 0;
+        const orderItems = [];
+        
+        for (const item of cart) {
+            const itemTotal = item.price * item.qty;
+            subtotal += itemTotal;
+            
+            // Prepare order item
+            orderItems.push({
+                product_name: item.name,
+                product_code: item.sku || 'UNKNOWN',
+                quantity: item.qty,
+                price_per_unit: item.price,
+                total_price: itemTotal,
+                is_wholesale: false,
+                commission_per_item: 0, // Will be calculated on server
+                total_commission: 0
+            });
+        }
+
+        // Create order in database
+        const orderData = {
+            customer_name: nama,
+            customer_wa: waNumber,
+            address_full: fullAddress,
+            subtotal: subtotal,
+            total: subtotal, // Will be updated when shipping is added
+            shipping_cost: 0,
+            status: 'WAITING_CONFIRMATION',
+            affiliate_code: affiliateCode,
+            total_commission: 0,
+            is_self_referral: isSelfReferral
+        };
+
+        const order = await apiClient.createOrder(orderData);
+        
+        // Create order items
+        const itemsWithOrderId = orderItems.map(item => ({
+            ...item,
+            order_id: order.id
+        }));
+        
+        await apiClient.createOrderItems(itemsWithOrderId);
+
+        // Prepare WhatsApp message
+        let listProduk = "";
+        cart.forEach((item, i) => {
+            listProduk += `${i+1}. ${item.name} (${item.qty}x) - Rp ${(item.price * item.qty).toLocaleString('id-ID')}\n`;
+        });
+
+        const teks = window.CONFIG?.WA_TEMPLATES.ORDER_TO_ADMIN(
+            order.order_number,
+            nama,
+            listProduk,
+            subtotal,
+            hp,
+            fullAddress
+        );
+
+        // Clear cart and redirect to WhatsApp
+        cart = [];
+        saveCart();
+        
+        // Encode URI and open WhatsApp
+        const waUrl = `https://wa.me/${noAdmin}?text=${encodeURIComponent(teks)}`;
+        window.open(waUrl, '_blank');
+        
+        // Show success message
+        alert(`✅ Pesanan berhasil dibuat!\nOrder ID: #${order.order_number}\n\nSilakan lanjutkan konfirmasi via WhatsApp.`);
+        
+        // Switch to store tab
+        switchTab('store');
+        
+        btnCheckout.innerHTML = originalText;
+        btnCheckout.disabled = false;
+        
+    } catch (error) {
+        console.error('Checkout error:', error);
+        alert('Terjadi kesalahan saat memproses pesanan. Silakan coba lagi.');
+        
+        const btnCheckout = document.querySelector('.btn-wa');
+        btnCheckout.innerHTML = '<i class="ri-whatsapp-line"></i> Lanjut ke WhatsApp';
+        btnCheckout.disabled = false;
+    }
 }
 
 // --- 7. NAVIGASI TAB & PENCARIAN ---

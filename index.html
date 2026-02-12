@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="api-client.js"></script>
 </head>
 <body>
 
@@ -51,7 +53,7 @@
                 <input id="c-loc" class="input-field" placeholder="Kecamatan & Kota (Wajib Diisi)">
                 <textarea id="c-addr" class="input-field" rows="2" placeholder="Alamat Lengkap (Jalan, RT/RW, Patokan)"></textarea>
 
-                <button onclick="checkoutWA()" class="btn-wa">
+                <button onclick="checkoutWhatsApp()" class="btn-wa">
                     <i class="ri-whatsapp-line"></i> Lanjut ke WhatsApp
                 </button>
             </div>
