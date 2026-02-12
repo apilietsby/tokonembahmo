@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // KONFIGURASI SUPABASE
 const supabaseUrl = 'https://apskbihwpbgvooiskrel.supabase.co/'; 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwc2tiaWh3cGJndm9vaXNrcmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjU5ODMsImV4cCI6MjA4NjQwMTk4M30.Cvq-1GWPvOroJjGIVFsI3P9EQRUW7XR7Q_1fnaPyQow';
@@ -92,10 +91,3 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
     fetchProducts();
 });
-=======
-function fetchProducts() {
-    return supabase
-        .from('products')
-        .select('*');
-}
->>>>>>> b21287dd8c47a3c3c96bf27af2654403fb4656a8
