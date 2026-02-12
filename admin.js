@@ -174,10 +174,17 @@ async function saveProduct(event) {
         // Supaya sistem tahu ini produk tunggal.
         const finalVariants = tempVariants.length > 0 ? tempVariants : null;
 
+        // Generate code if not editing (for new products)
+        let productCode = document.getElementById('p-sku').value || `PROD-${Date.now()}`;
+        
         const payload = {
             name: pName,
+            code: productCode,
             sku: document.getElementById('p-sku').value,
             price: pPrice, // Harga utama tetap disimpan sebagai fallback atau harga dasar
+            price_small: 0, // Can be updated later
+            commission_per_unit: 0, // Default, can be updated in admin
+            price_wholesale: 0, // Default, can be updated in admin
             description: document.getElementById('p-desc').value,
             default_tiktok_link: document.getElementById('p-tiktok').value,
             is_active: document.getElementById('p-status').value === 'true',
