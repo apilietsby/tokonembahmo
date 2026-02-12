@@ -85,8 +85,8 @@ CREATE TABLE IF NOT EXISTS order_items (
     total_price INTEGER NOT NULL,
     total_commission INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_code) REFERENCES products(code) ON DELETE RESTRICT
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    -- Note: Removed FK constraint on product_code to allow flexible product entries
 );
 
 -- F. AFFILIATE LINKS TABLE (For Custom TikTok URLs)

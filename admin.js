@@ -175,7 +175,16 @@ async function saveProduct(event) {
         const finalVariants = tempVariants.length > 0 ? tempVariants : null;
 
         // Generate code if not editing (for new products)
-        let productCode = document.getElementById('p-sku').value || `PROD-${Date.now()}`;
+        // Use SKU if provided, otherwise generate a structured code
+        let productCode;
+        if (document.getElementById('p-sku').value) {
+            productCode = document.getElementById('p-sku').value.toUpperCase().replace(/\s+/g, '-');
+        } else {
+            // Generate based on product name
+            const namePrefix = pName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+            const timestamp = Date.now().toString().slice(-6);
+            productCode = `${namePrefix}${timestamp}`;
+        }
         
         const payload = {
             name: pName,

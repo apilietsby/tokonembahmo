@@ -465,10 +465,13 @@ async function checkoutWhatsApp() {
             const itemTotal = item.price * item.qty;
             subtotal += itemTotal;
             
+            // Get product code - use SKU or generate a temp code
+            let productCode = item.sku || `TEMP-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+            
             // Prepare order item
             orderItems.push({
                 product_name: item.name,
-                product_code: item.sku || 'UNKNOWN',
+                product_code: productCode,
                 quantity: item.qty,
                 price_per_unit: item.price,
                 total_price: itemTotal,

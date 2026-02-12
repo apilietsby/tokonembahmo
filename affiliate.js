@@ -87,8 +87,11 @@ function switchTab(tabName) {
     // Show selected tab
     document.getElementById('tab-' + tabName).classList.add('active');
     
-    // Add active to selected nav item
-    event.target.closest('.nav-item').classList.add('active');
+    // Add active to selected nav item - find by matching onclick attribute
+    const targetNavItem = document.querySelector(`.nav-item[onclick*="'${tabName}'"]`);
+    if (targetNavItem) {
+        targetNavItem.classList.add('active');
+    }
     
     // Load data for specific tabs
     switch(tabName) {
@@ -345,15 +348,24 @@ async function loadLinks() {
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         // Show toast or feedback
-        const btn = event.target.closest('.btn-copy');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="ri-check-line"></i> Copied!';
-        btn.style.background = '#28a745';
-        
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.background = '#42b549';
-        }, 2000);
+        // Note: This relies on the button being clicked, so event.target should be available from the inline onclick
+        // Alternative: pass button reference as parameter
+        const btns = document.querySelectorAll('.btn-copy');
+        btns.forEach(btn => {
+            if (btn.previousElementSibling && btn.previousElementSibling.value === text) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="ri-check-line"></i> Copied!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '#42b549';
+                }, 2000);
+            }
+        });
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Gagal copy link. Silakan copy manual.');
     });
 }
 

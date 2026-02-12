@@ -56,8 +56,11 @@ function switchTab(tabName) {
     // Show selected tab
     document.getElementById('tab-' + tabName).classList.add('active');
     
-    // Add active to selected button
-    event.target.classList.add('active');
+    // Add active to selected button - find by matching onclick attribute
+    const targetBtn = document.querySelector(`.tab-btn[onclick*="'${tabName}'"]`);
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
     
     // Load data for the tab
     switch(tabName) {

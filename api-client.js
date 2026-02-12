@@ -95,8 +95,10 @@ class ApiClient {
     // ==========================================
     
     async createOrder(orderData) {
-        // Generate order number
-        const orderNumber = 'ORD' + Date.now() + Math.floor(Math.random() * 1000);
+        // Generate order number with better uniqueness
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const orderNumber = `ORD${timestamp}${random}`;
         
         const { data, error } = await this.db
             .from('orders')
